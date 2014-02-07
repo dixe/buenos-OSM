@@ -12,6 +12,7 @@ int syscall_read(int fhandle, void *buffer, int length){
   device_t *dev;
   gcd_t *gcd;
   int actual_read = 0;
+  int len = 0;
 
   /*Find the system console (first tty)) */
   dev = device_get(YAMS_TYPECODE_TTY,fhandle);
@@ -22,11 +23,17 @@ int syscall_read(int fhandle, void *buffer, int length){
     return -1;
   }
 
-  while( gcd->read(gcd, buffer, length) !='\0'){
+  /*  while( gcd->read(gcd, buffer, length) !='\0'){
       actual_read++;
+      }*/
+  while (len < length){
+    len += gcd->read(gcd, buffer,length);
   }
-
-
+  
+  /*debugging remove THIS*/
+  len = gcd->write(gcd, buffer,len);
+ 
+  
   return actual_read;
 
   

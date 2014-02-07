@@ -62,6 +62,10 @@ void syscall_handle(context_t *user_context)
     case SYSCALL_HALT:
         halt_kernel();
         break;
+    case SYSCALL_READ:
+      /* register V0 sohuld contain return value, if there are on*/
+        user_context->cpu_regs[MIPS_REGISTER_V0] = syscall_read();
+	break;
     default: 
         KERNEL_PANIC("Unhandled system call\n");
     }

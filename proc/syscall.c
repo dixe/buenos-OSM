@@ -34,6 +34,7 @@
  *
  */
 #include "kernel/cswitch.h"
+#include "kernel/read.h"
 #include "proc/syscall.h"
 #include "kernel/halt.h"
 #include "kernel/panic.h"

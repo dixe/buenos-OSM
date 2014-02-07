@@ -33,7 +33,6 @@
  * $Id: syscall.h,v 1.5 2005/02/23 09:34:34 lsalmela Exp $
  *
  */
-
 #ifndef BUENOS_PROC_SYSCALL
 #define BUENOS_PROC_SYSCALL
 
@@ -53,7 +52,7 @@
 #define SYSCALL_WRITE 0x205
 #define SYSCALL_CREATE 0x206
 #define SYSCALL_DELETE 0x207
-#define SYSCALL_HELLO 0x999 /*test syscall: hello_syscall(int x)*/
+
 
 /* When userland program reads or writes these already open files it
  * actually accesses the console.

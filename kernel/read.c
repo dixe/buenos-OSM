@@ -2,6 +2,7 @@
   syscall read
   always read from console
 */
+#define NULL 0 /* define NULL since we can't use stdlib*/
 #include "drivers/gcd.h"
 #include "drivers/device.h"
 #include "drivers/polltty.h"
@@ -11,10 +12,9 @@ int syscall_read(int fhandle, void *buffer, int length){
   device_t *dev;
   gcd_t *gcd;
   int actual_read = 0;
-  int len =0;
 
   /*Find the system console (first tty)) */
-  dev = device_get(YAMS_TYPECODE_TTY,0);
+  dev = device_get(YAMS_TYPECODE_TTY,fhandle);
   
   /* Set gernice char device*/
   gcd = ( gcd_t *) dev->generic_device;
@@ -22,9 +22,10 @@ int syscall_read(int fhandle, void *buffer, int length){
     return -1;
   }
 
-  while(len = gcd->read(gcd, buffer, length) !=EOF){
+  while( gcd->read(gcd, buffer, length) !='\0'){
       actual_read++;
   }
+
 
   return actual_read;
 

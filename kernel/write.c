@@ -10,7 +10,7 @@
 #include "drivers/polltty.h"
 #include "drivers/yams.h"
 
-int syscall_write(int fhandle, void *buffer, int length){
+int syscall_write(int fhandle, const void *buffer, int length){
   device_t *dev;
   gcd_t *gcd;
   int len = 0;

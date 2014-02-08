@@ -23,10 +23,10 @@ int syscall_read(int fhandle, void *buffer, int length){
   }
 
 
-  while(length > len){
-    gcd->read(gcd, buffer, len);
-    len++;
-  }
-    gcd->write(gcd, buffer, len);
+
+  len += gcd->read(gcd, buffer, length);
+
+
+  gcd->read(gcd, buffer, len);
   return len;
 }

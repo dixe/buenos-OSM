@@ -35,6 +35,7 @@
  */
 #include "kernel/cswitch.h"
 #include "kernel/read.h"
+#include "kernel/write.h"
 #include "proc/syscall.h"
 #include "kernel/halt.h"
 #include "kernel/panic.h"
@@ -66,6 +67,12 @@ void syscall_handle(context_t *user_context)
     case SYSCALL_READ:
       user_context->cpu_regs[MIPS_REGISTER_V0]=
 	syscall_read(user_context->cpu_regs[MIPS_REGISTER_A1],
+		     (void *) user_context->cpu_regs[MIPS_REGISTER_A2],
+		     user_context->cpu_regs[MIPS_REGISTER_A3]);
+	break;
+    case SYSCALL_WRITE:
+      user_context->cpu_regs[MIPS_REGISTER_V0]=
+	syscall_write(user_context->cpu_regs[MIPS_REGISTER_A1],
 		     (void *) user_context->cpu_regs[MIPS_REGISTER_A2],
 		     user_context->cpu_regs[MIPS_REGISTER_A3]);
 	break;

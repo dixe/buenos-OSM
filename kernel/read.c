@@ -11,10 +11,6 @@
 int syscall_read(int fhandle, void *buffer, int length){
   device_t *dev;
   gcd_t *gcd;
-<<<<<<< HEAD
-=======
-  int actual_read = 0;
->>>>>>> af9188fbe45c17bd674ea543bf9166e948a00333
   int len = 0;
 
   /*Find the system console (first tty)) */
@@ -26,27 +22,11 @@ int syscall_read(int fhandle, void *buffer, int length){
     return -1;
   }
 
-<<<<<<< HEAD
+
   while(length > len){
     gcd->read(gcd, buffer, len);
     len++;
   }
     gcd->write(gcd, buffer, len);
   return len;
-=======
-  /*  while( gcd->read(gcd, buffer, length) !='\0'){
-      actual_read++;
-      }*/
-  while (len < length){
-    len += gcd->read(gcd, buffer,length);
-  }
-  
-  /*debugging remove THIS*/
-  len = gcd->write(gcd, buffer,len);
- 
-  
-  return actual_read;
-
->>>>>>> af9188fbe45c17bd674ea543bf9166e948a00333
-  
 }

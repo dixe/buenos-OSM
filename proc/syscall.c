@@ -34,13 +34,74 @@
  *
  */
 #include "kernel/cswitch.h"
-#include "kernel/read.h"
-#include "kernel/write.h"
 #include "proc/syscall.h"
 #include "kernel/halt.h"
 #include "kernel/panic.h"
 #include "lib/libc.h"
 #include "kernel/assert.h"
+#include "drivers/gcd.h"
+#include "drivers/device.h"
+#include "drivers/polltty.h"
+#include "drivers/yams.h"
+
+/*
+ * Syscalls for buenoes
+ */
+/*write syscall*/
+int syscall_write(int fhandle, const void *buffer, int length){
+  device_t *dev;
+  gcd_t *gcd;
+  int len = 0;
+  
+  /*
+   * we always write to terminal, and we don't need fhandle
+   * assign it to itself to avoid compiler warnings ie errors
+   */
+  fhandle = fhandle;
+
+  /*Find the system console (first tty)) */
+  dev = device_get(YAMS_TYPECODE_TTY,1);
+  
+  /* Set gernice char device*/
+  gcd = ( gcd_t *) dev->generic_device;
+  if(gcd == NULL){ /*if gcd is NULL we have an error*/
+    return -1;
+  }
+  
+  len = gcd->write(gcd, buffer, length);
+
+  return len;
+}
+
+/*read syscall*/
+int syscall_read(int fhandle, void *buffer, int length){
+  device_t *dev;
+  gcd_t *gcd;
+  int len = 0;
+
+  /*
+   * we always read from terminal, and we don't need fhandle
+   * assign it to itself to avoid compiler warnings ie errors
+   */
+  fhandle = fhandle;
+
+  /*Find the system console (first tty)) */
+  dev = device_get(YAMS_TYPECODE_TTY,0);
+  
+  /* Set gernice char device*/
+  gcd = ( gcd_t *) dev->generic_device;
+  if(gcd == NULL){ /*if gcd is NULL we have an error*/
+    return -1;
+  }
+
+  /*
+   * Read one byte from std_in, and return
+   * len is 1 and we return len
+   */
+  len = gcd->read(gcd, buffer, length);
+
+  return len;
+}
 
 /**
  * Handle system calls. Interrupts are enabled when this function is

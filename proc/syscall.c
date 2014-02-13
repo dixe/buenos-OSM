@@ -60,13 +60,15 @@ int syscall_write(int fhandle, const void *buffer, int length){
   fhandle = fhandle;
 
   /*Find the system console (first tty)) */
-  dev = device_get(YAMS_TYPECODE_TTY,1);
-  
+  /* Should be FILEHANDLE_STDOUT, which is 1, but when
+   * using 1 and not 0 i get kernel assert failed on dev
+   */
+  dev = device_get(YAMS_TYPECODE_TTY,0);
+  KERNEL_ASSERT(dev != NULL);
+
   /* Set gernice char device*/
   gcd = ( gcd_t *) dev->generic_device;
-  if(gcd == NULL){ /*if gcd is NULL we have an error*/
-    return -1;
-  }
+  KERNEL_ASSERT(dev != NULL);
   
   len = gcd->write(gcd, buffer, length);
 
@@ -80,25 +82,25 @@ int syscall_read(int fhandle, void *buffer, int length){
   int len = 0;
 
   /*
-   * we always read from terminal, and we don't need fhandle
+   * we always read from terminal so we don't need fhandle
    * assign it to itself to avoid compiler warnings ie errors
    */
   fhandle = fhandle;
 
   /*Find the system console (first tty)) */
-  dev = device_get(YAMS_TYPECODE_TTY,0);
-  
+  dev = device_get(YAMS_TYPECODE_TTY,FILEHANDLE_STDIN);
+  KERNEL_ASSERT(dev != NULL);
+
   /* Set gernice char device*/
   gcd = ( gcd_t *) dev->generic_device;
-  if(gcd == NULL){ /*if gcd is NULL we have an error*/
-    return -1;
-  }
+  KERNEL_ASSERT(gcd != NULL);
 
   /*
    * Read one byte from std_in, and return
    * len is 1 and we return len
    */
   len = gcd->read(gcd, buffer, length);
+  
 
   return len;
 }
@@ -123,22 +125,22 @@ void syscall_handle(context_t *user_context)
      */
     switch(user_context->cpu_regs[MIPS_REGISTER_A0]) {
     case SYSCALL_HALT:
-        halt_kernel();
-        break;
+      halt_kernel();
+      break;
     case SYSCALL_READ:
       user_context->cpu_regs[MIPS_REGISTER_V0]=
 	syscall_read(user_context->cpu_regs[MIPS_REGISTER_A1],
 		     (void *) user_context->cpu_regs[MIPS_REGISTER_A2],
 		     user_context->cpu_regs[MIPS_REGISTER_A3]);
-	break;
+      break;
     case SYSCALL_WRITE:
       user_context->cpu_regs[MIPS_REGISTER_V0]=
 	syscall_write(user_context->cpu_regs[MIPS_REGISTER_A1],
-		     (void *) user_context->cpu_regs[MIPS_REGISTER_A2],
-		     user_context->cpu_regs[MIPS_REGISTER_A3]);
-	break;
+		      (void *) user_context->cpu_regs[MIPS_REGISTER_A2],
+		      user_context->cpu_regs[MIPS_REGISTER_A3]);
+      break;
     default: 
-        KERNEL_PANIC("Unhandled system call\n");
+      KERNEL_PANIC("Unhandled system call\n");
     }
 
     /* Move to next instruction after system call */

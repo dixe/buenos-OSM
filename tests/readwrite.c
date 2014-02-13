@@ -6,7 +6,7 @@ int main(void)
   // char buffer2[16];
   // int len = 0;
 
-  syscall_write(0, &buffer,32);
+  syscall_write(0, buffer,32);
 
   /*  len = syscall_read(0,&buffer2,16); 
   

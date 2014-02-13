@@ -83,7 +83,7 @@ int syscall_read(int fhandle, void *buffer, int length){
 
   /*
    * we always read from terminal so we don't need fhandle
-   * assign it to itself to avoid compiler warnings ie errors
+   * assign it to itself to avoid compiler warnings ie. errors
    */
   fhandle = fhandle;
 

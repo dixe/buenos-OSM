@@ -1,19 +1,28 @@
 #include "tests/lib.h"
+#include "lib/libc.h"
 
 int main(void)
 {
-  char buffer[32] = "Hej dette er en test\n";
-  // char buffer2[16];
-  // int len = 0;
-
-  syscall_write(0, buffer,32);
-
-  /*  len = syscall_read(0,&buffer2,16); 
+  char buffer[32] = "Write something: ";
+  char buffer2[32];
+  int len;
   
-    syscall_write(0, &buffer,32);
-  if(len==1){
-    syscall_write(0, &buffer2,16);   
-    }*/
+  /*Write the contnt of buffer*/
+  syscall_write(0, buffer,31);
+  
+  /*Read one byte from the screen*/
+  len = syscall_read(0, buffer2,31); 
+  buffer2[len] = '\0';
+
+  /*echo what the user wrote*/
+  char buffer3[32] = "\nYou said: ";
+  syscall_write(0,buffer3,31);
+
+  /*Write what the user wrote*/
+  syscall_write(0, buffer2,31);   
+
+  char buffer4[32] = "\n";
+  syscall_write(0,buffer4,31);
   
  /*halt system after read and write*/
   syscall_halt();

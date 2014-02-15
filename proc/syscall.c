@@ -96,11 +96,24 @@ int syscall_read(int fhandle, void *buffer, int length){
   KERNEL_ASSERT(gcd != NULL);
 
   /*
-   * Read one byte from std_in, and return
-   * len is 1 and we return len
+   * read bytes until we at length or over
+   * or until we get a enter, enter in ascii is 13
    */
-  len = gcd->read(gcd, buffer, length);
-  
+  while(len <= length && !( *(char*) (buffer+len-1)== 13)){
+    /* we read one byte at a type, so we increment len, and
+     * store the next byte on the offset of len
+     */
+    len += gcd->read(gcd, buffer + len, length);
+
+    /* If we don't hit enter, write to
+     * the screen what the user typed in
+     */
+    if(!( *(char*) (buffer+len-1)== 13)){
+      // should only write one char
+      syscall_write(0,buffer+len-1,length - len);
+    }
+
+  }
 
   return len;
 }

@@ -68,7 +68,7 @@ int syscall_write(int fhandle, const void *buffer, int length){
     return -1;
   }
 
-  /* Set gernice char device*/
+  /* Set gerneric char device*/
   gcd = ( gcd_t *) dev->generic_device;
   if(gcd == NULL){
     return -1;

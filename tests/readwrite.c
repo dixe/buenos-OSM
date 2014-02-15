@@ -10,7 +10,7 @@ int main(void)
   /*Write the contnt of buffer*/
   syscall_write(0, buffer,31);
   
-  /*Read one byte from the screen*/
+  /*Read 31 bytes, or until enter is pressed*/ 
   len = syscall_read(0, buffer2,31); 
   buffer2[len] = '\0';
 
@@ -22,6 +22,20 @@ int main(void)
   syscall_write(0, buffer2,31);   
 
   char buffer4[32] = "\n";
+  syscall_write(0,buffer4,31);
+
+  //read into buffer2 again
+  
+  /*Read 31 bytes, or until enter is pressed*/ 
+  len = syscall_read(0, buffer2,31); 
+  buffer2[len] = '\0';
+
+  /*echo what the user wrote*/
+  syscall_write(0,buffer3,31);
+
+  /*Write what the user wrote*/
+  syscall_write(0, buffer2,31);   
+
   syscall_write(0,buffer4,31);
   
  /*halt system after read and write*/

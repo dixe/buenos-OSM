@@ -112,13 +112,12 @@ int syscall_read(int fhandle, void *buffer, int length){
      * store the next byte on the offset of len
      */
     len += gcd->read(gcd, buffer + len, length);
-
     /* If we don't hit enter, write to
      * the screen what the user typed in
      */
     if(!( *(char*) (buffer+len-1)== 13)){
       // should only write one char
-      syscall_write(0,buffer+len-1,length - len);
+      syscall_write(0,buffer+len-1, 1);
     }
 
   }

@@ -97,7 +97,7 @@ int syscall_read(int fhandle, void *buffer, int length){
     return -1;
   }
 
-  /* Set gernice char device*/
+  /* Set genice char device*/
   gcd = ( gcd_t *) dev->generic_device;
   if(gcd == NULL){
     return -1;

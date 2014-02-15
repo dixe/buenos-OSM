@@ -64,11 +64,15 @@ int syscall_write(int fhandle, const void *buffer, int length){
    * using 1 and not 0 i get kernel assert failed on dev
    */
   dev = device_get(YAMS_TYPECODE_TTY,0);
-  KERNEL_ASSERT(dev != NULL);
+  if(dev == NULL){
+    return -1;
+  }
 
   /* Set gernice char device*/
   gcd = ( gcd_t *) dev->generic_device;
-  KERNEL_ASSERT(dev != NULL);
+  if(gcd == NULL){
+    return -1;
+  }
   
   len = gcd->write(gcd, buffer, length);
 
@@ -88,12 +92,16 @@ int syscall_read(int fhandle, void *buffer, int length){
   fhandle = fhandle;
 
   /*Find the system console (first tty)) */
-  dev = device_get(YAMS_TYPECODE_TTY,FILEHANDLE_STDIN);
-  KERNEL_ASSERT(dev != NULL);
+  dev = device_get(YAMS_TYPECODE_TTY,FILEHANDLE_STDIN); 
+  if(dev == NULL){
+    return -1;
+  }
 
   /* Set gernice char device*/
   gcd = ( gcd_t *) dev->generic_device;
-  KERNEL_ASSERT(gcd != NULL);
+  if(gcd == NULL){
+    return -1;
+  }
 
   /*
    * read bytes until we at length or over

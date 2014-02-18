@@ -49,24 +49,24 @@ void process_start(const char *executable);
 #define PROCESS_ILLEGAL_JOIN -2
 
 #define PROCESS_MAX_PROCESSES 32
+#define FILENAME_LENGTH 20
 
 /* Process state, might need more states*/
 typedef enum {
   PROCESS_FREE,
   PROCESS_RUNNING,
   PROCESS_ZOMBIE
-} process_state_t;
+} process_status_t;
 
 
 /*context for a process*/
 typedef struct {
-    uint32_t cpu_regs[29];   /* The general purpose registers. zero, k0 and 
+  uint32_t cpu_regs[29];   /* The general purpose registers. zero, k0 and 
                                 k1 registers are omitted. */
-    uint32_t hi;             /* The hi register. */
-    uint32_t lo;             /* The lo register. */
-    uint32_t pc;             /* The program counter. Actually loaded from 
-                                EPC register in co-processor 0. */
-    uint32_t status;         /* Status register bits. */
+  uint32_t hi;             /* The hi register. */
+  uint32_t lo;             /* The lo register. */
+  uint32_t pc;             /* The program counter. Actually loaded from 
+			      EPC register in co-processor 0. */
 } proc_context_t;
 
 
@@ -76,9 +76,14 @@ typedef struct {
   proc_context_t *context;
 
   /*state of the process*/
-  process_state_t state;
-  
-  char *executeable;
+  int pid;                 /*process id */ 
+
+  char filename[FILENAME_LENGTH]; 
+
+  process_status_t status; /*current status of process*/
+
+  int retval;          /* Hold return value of the process*/
+
 } process_control_block_t;
 
 /* Initialize the process table.  This must be called during kernel

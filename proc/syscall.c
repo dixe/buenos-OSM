@@ -43,6 +43,7 @@
 #include "drivers/device.h"
 #include "drivers/polltty.h"
 #include "drivers/yams.h"
+#include "proc/process.h"
 
 /*
  * Syscalls for buenoes
@@ -110,6 +111,20 @@ int syscall_read(int fhandle, void *buffer, int length){
   
   return len;
 }
+/*join syscall return value of call to process_join with pid as arg*/
+int syscall_join(int pid){
+  return process_join(pid);
+}
+
+/*exit syscall, calls process_finish with retval as arg*/
+void syscall_exit(int retval){
+  process_finish(retval);  
+}
+
+/*exec syscall, return value of process_spawn with filename as arg*/
+int syscall_exec(const char* filename){
+  return process_spawn(filename);
+}
 
 /**
  * Handle system calls. Interrupts are enabled when this function is
@@ -145,6 +160,18 @@ void syscall_handle(context_t *user_context)
 	syscall_write(user_context->cpu_regs[MIPS_REGISTER_A1],
 		      (void *) user_context->cpu_regs[MIPS_REGISTER_A2],
 		      user_context->cpu_regs[MIPS_REGISTER_A3]);
+      break;
+    case SYSCALL_EXEC:
+      user_context->cpu_regs[MIPS_REGISTER_V0]=
+	 syscall_exec(
+		      (char *) user_context->cpu_regs[MIPS_REGISTER_A1]);
+      break;
+    case SYSCALL_EXIT:
+      syscall_exit(user_context->cpu_regs[MIPS_REGISTER_A1]);
+      break;
+    case SYSCALL_JOIN:
+      user_context->cpu_regs[MIPS_REGISTER_V0]=
+	syscall_join(user_context->cpu_regs[MIPS_REGISTER_A1]);
       break;
     default: 
       KERNEL_PANIC("Unhandled system call\n");

@@ -44,11 +44,16 @@
 #include "drivers/yams.h"
 #include "vm/vm.h"
 #include "vm/pagepool.h"
+#include "kernel/spinlock.h"
+#include "kernel/sleepq.h"
+#include "lib/types.h"
 
 /** @name Process startup
  *
  * This module contains facilities for managing userland process.
  */
+
+spinlock_t process_table_slock;
 
 process_control_block_t process_table[PROCESS_MAX_PROCESSES];
 
@@ -189,25 +194,116 @@ void process_start(const char *executable)
 }
 
 void process_init() {
-  KERNEL_PANIC("Not implemented.");
+  int i;
+  for(i = 0; i < PROCESS_MAX_PROCESSES; i++){
+    /*Initialize every process as free in process table*/
+    process_table[i].status = PROCESS_FREE;
+  }
+
+  spinlock_reset(&process_table_slock);
+}
+
+void process_run(uint32_t pid){
+  /* process_run is entered by the new thread created in process_spawm
+   * the current thread is the one the executable will run in.
+   * Set the current thread to the pid we got as input
+   */
+  
+  thread_get_current_thread_entry()->process_id = pid;
+  /*Using pid get the name of the executable, and run it with process_start*/
+  process_start(process_table[pid].filename);
+  
 }
 
 process_id_t process_spawn(const char *executable) {
-  executable = executable;
-  KERNEL_PANIC("Not implemented.");
-  return 0; /* Dummy */
+  /*init pid to -1, which is not a valid pid*/
+  int i, tid, pid = -1;
+
+  /*disable interrupts, save the old interrupt status*/
+  interrupt_status_t intr_status;  
+  intr_status = _interrupt_disable();
+  /*Acuire spinlock*/
+  spinlock_acquire(&process_table_slock);
+
+  /*Find first empty process in process table*/
+  for(i = 0; i < PROCESS_MAX_PROCESSES; i++){
+    if(process_table[i].status == PROCESS_FREE){
+      /*we found a free process*/
+      pid = i;
+      break;
+    }
+  }
+
+  /*if pid is still -1, we didn't find a new pid*/
+  if(pid == -1){
+    return PROCESS_PTABLE_FULL;
+  }
+  
+  stringcopy(process_table[pid].filename,executable,FILENAME_LENGTH);
+  
+  /*create a new thread that runs process_run(pid)*/
+  tid = thread_create(&process_run, pid);
+  thread_run(tid);
+
+  /*release lock and reset interrupt status to the old one*/
+  spinlock_release(&process_table_slock);
+  _interrupt_set_state(intr_status);
+
+  return pid;
 }
 
 /* Stop the process and the thread it runs in. Sets the return value as well */
 void process_finish(int retval) {
-  retval=retval;
-  KERNEL_PANIC("Not implemented.");
+  int pid;
+ /*disable interrupts, save the old interrupt status*/
+  interrupt_status_t intr_status;  
+  intr_status = _interrupt_disable();
+  /*Acuire spinlock*/
+  spinlock_acquire(&process_table_slock);
+  
+  /*get the pid for current process */
+  pid = process_get_current_process();
+
+  /*Save the return value, and set process status as zombie*/
+  process_table[pid].retval = retval;
+  process_table[pid].status = PROCESS_ZOMBIE;
+  
+  /*wake up threads that wait for this thread to finish*/
+  sleepq_wake(&process_table[pid]);
+  
+  /*release lock, and renable interrupts*/
+  spinlock_release(&process_table_slock);
+  _interrupt_set_state(intr_status);
 }
 
 int process_join(process_id_t pid) {
-  pid=pid;
-  KERNEL_PANIC("Not implemented.");
-  return 0; /* Dummy */
+  int retval;
+  
+  /*disable interrupts, save the old interrupt status*/
+  interrupt_status_t intr_status;  
+  intr_status = _interrupt_disable();
+  /*Acuire spinlock*/
+  spinlock_acquire(&process_table_slock);
+  
+  /*While the process is still running, sleep and test again*/
+  while(process_table[pid].status != PROCESS_ZOMBIE){
+    /*Sleep */
+    sleepq_add(&process_table[pid]);
+    /*unlock process_table*/
+    spinlock_release(&process_table_slock);
+    thread_switch();
+    /*lock process table again*/
+    spinlock_acquire(&process_table_slock);	       
+  }
+  
+  /*Set process to free*/
+  process_table[pid].status = PROCESS_FREE;
+  retval =  process_table[pid].retval;
+  /*release lock, and renable interrupts*/
+  spinlock_release(&process_table_slock);
+  _interrupt_set_state(intr_status);
+  
+  return retval;
 }
 
 

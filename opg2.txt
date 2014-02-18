@@ -1,0 +1,21 @@
+PID lock array, always lock
+
+init i main.c inden firste process
+
+process_start->process_spawn 
+
+get returned pid
+
+process_join(pid) -- pid process_spawn oven over
+
+init set all to free and init spinlock
+
+create spinlock
+
+setting filename use stringcopy
+
+tid = thread_creat(executeable)
+thread_run(tid)
+#after creating new thread
+#in function process_run call process start in that
+thread_get_current_thrad_entry()->process_ip = pid

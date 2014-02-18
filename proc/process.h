@@ -52,11 +52,8 @@ void process_start(const char *executable);
 
 /* Process state, might need more states*/
 typedef enum {
-  PROCESS_NEW,
-  PROCESS_READY,
+  PROCESS_FREE,
   PROCESS_RUNNING,
-  PROCESS_WAITING,
-  PROCESS_TERMINATED,
   PROCESS_ZOMBIE
 } process_state_t;
 

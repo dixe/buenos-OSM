@@ -19,3 +19,21 @@ thread_run(tid)
 #after creating new thread
 #in function process_run call process start in that
 thread_get_current_thrad_entry()->process_ip = pid
+
+
+process finish, set to zombie and save exitvalue
+
+til waiting brug sleeup queue  sleepq.h,
+
+process_join
+    diable and lock
+    while(not zombie)
+        sleepq_add(&provess_table[pid]))
+        unlock_process_table()
+        thread_switch();
+        lock_process_table()
+    
+    process_table[pid].status = PROCESS_FREE
+    unlock enable
+
+    return 

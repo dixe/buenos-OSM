@@ -104,24 +104,10 @@ int syscall_read(int fhandle, void *buffer, int length){
   }
 
   /*
-   * read bytes until we at length or over
-   * or until we get a enter, enter in ascii is 13
+   * read one byte
    */
-  while(len <= length && !( *(char*) (buffer+len-1)== 13)){
-    /* we read one byte at a type, so we increment len, and
-     * store the next byte on the offset of len
-     */
-    len += gcd->read(gcd, buffer + len, length);
-    /* If we don't hit enter, write to
-     * the screen what the user typed in
-     */
-    if(!( *(char*) (buffer+len-1)== 13)){
-      // should only write one char
-      syscall_write(0,buffer+len-1, 1);
-    }
-
-  }
-
+  len = gcd->read(gcd, buffer, length);
+  
   return len;
 }
 
@@ -143,15 +129,16 @@ void syscall_handle(context_t *user_context)
      * returning from this function the userland context will be
      * restored from user_context.
      */
+
     switch(user_context->cpu_regs[MIPS_REGISTER_A0]) {
     case SYSCALL_HALT:
       halt_kernel();
       break;
     case SYSCALL_READ:
-      user_context->cpu_regs[MIPS_REGISTER_V0]=
+      user_context->cpu_regs[MIPS_REGISTER_V0] = 
 	syscall_read(user_context->cpu_regs[MIPS_REGISTER_A1],
 		     (void *) user_context->cpu_regs[MIPS_REGISTER_A2],
-		     user_context->cpu_regs[MIPS_REGISTER_A3]);
+                     user_context->cpu_regs[MIPS_REGISTER_A3]);
       break;
     case SYSCALL_WRITE:
       user_context->cpu_regs[MIPS_REGISTER_V0]=

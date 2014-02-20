@@ -59,26 +59,12 @@ typedef enum {
 } process_status_t;
 
 
-/*context for a process*/
-typedef struct {
-  uint32_t cpu_regs[29];   /* The general purpose registers. zero, k0 and 
-                                k1 registers are omitted. */
-  uint32_t hi;             /* The hi register. */
-  uint32_t lo;             /* The lo register. */
-  uint32_t pc;             /* The program counter. Actually loaded from 
-			      EPC register in co-processor 0. */
-} proc_context_t;
-
 
 /* Control block structure for processes*/
 typedef struct {
-  /*context hold registers and pc*/
-  proc_context_t *context;
-
-  /*state of the process*/
   int pid;                 /*process id */ 
 
-  char filename[FILENAME_LENGTH]; 
+  char filename[FILENAME_LENGTH]; /*name of file executing*/
 
   process_status_t status; /*current status of process*/
 

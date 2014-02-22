@@ -252,9 +252,12 @@ process_id_t process_spawn(const char *executable) {
   return pid;
 }
 
+
 /* Stop the process and the thread it runs in. Sets the return value as well */
 void process_finish(int retval) {
   int pid;
+  thread_table_t *thr; /*Hold current thread*/
+
  /*disable interrupts, save the old interrupt status*/
   interrupt_status_t intr_status;  
   intr_status = _interrupt_disable();
@@ -267,13 +270,24 @@ void process_finish(int retval) {
   /*Save the return value, and set process status as zombie*/
   process_table[pid].retval = retval;
   process_table[pid].status = PROCESS_ZOMBIE;
-  
+
+  /*get the current thread*/
+  thr = thread_get_current_thread_entry();
+
+  /*destroy page table as the assignemt specify*/
+  vm_destroy_pagetable(thr->pagetable);
+  thr->pagetable = NULL;
+ 
   /*wake up threads that wait for this thread to finish*/
   sleepq_wake(&process_table[pid]);
   
   /*release lock, and renable interrupts*/
   spinlock_release(&process_table_slock);
   _interrupt_set_state(intr_status);
+
+  /*fisnish the thread as the last thing*/
+  thread_finish();
+
 }
 
 int process_join(process_id_t pid) {
@@ -299,6 +313,7 @@ int process_join(process_id_t pid) {
   /*Set process to free*/
   process_table[pid].status = PROCESS_FREE;
   retval =  process_table[pid].retval;
+
   /*release lock, and renable interrupts*/
   spinlock_release(&process_table_slock);
   _interrupt_set_state(intr_status);

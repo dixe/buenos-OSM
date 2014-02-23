@@ -241,6 +241,9 @@ process_id_t process_spawn(const char *executable) {
   
   stringcopy(process_table[pid].filename,executable,FILENAME_LENGTH);
   
+  /*Mark the process as running*/
+  process_table[pid].status = PROCESS_RUNNING;
+  
   /*create a new thread that runs process_run(pid)*/
   tid = thread_create(&process_run, pid);
   thread_run(tid);

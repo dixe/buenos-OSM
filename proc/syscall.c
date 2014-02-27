@@ -33,6 +33,7 @@
  * $Id: syscall.c,v 1.3 2004/01/13 11:10:05 ttakanen Exp $
  *
  */
+
 #include "kernel/cswitch.h"
 #include "proc/syscall.h"
 #include "kernel/halt.h"
@@ -44,6 +45,7 @@
 #include "drivers/polltty.h"
 #include "drivers/yams.h"
 #include "proc/process.h"
+#include "proc/semaphore.h"
 
 /*
  * Syscalls for buenoes
@@ -111,6 +113,7 @@ int syscall_read(int fhandle, void *buffer, int length){
   
   return len;
 }
+
 /*join syscall return value of call to process_join with pid as arg*/
 int syscall_join(int pid){
   return process_join(pid);
@@ -124,6 +127,56 @@ void syscall_exit(int retval){
 /*exec syscall, return value of process_spawn with filename as arg*/
 int syscall_exec(const char* filename){
   return process_spawn(filename);
+}
+
+user_sem_t *syscall_sem_open(char const *name, int value){
+  int sid ;
+  
+  if(value >= 0){
+    if(sem_name_exist(name)){ // semaphore with given name exist
+      return NULL;
+    }
+    
+    // try to get a new semaphore
+    sid = get_sem(name, value);
+    if(sid == -1){// no more free semaphores, return NULL to indicate error
+      return NULL;
+    }
+    /* if we are here, we know sid is valid, and has been set to a new
+     * user semaphore, so we use the
+     */    
+    return get_user_sem_sid(sid);
+
+  }
+  else{ // value negative
+    if(!sem_name_exist(name)){// if the name does not exist return null for e
+      return NULL;
+    }
+    // we know there is a semaphore with the name we are seeking return it
+    return get_user_sem_name(name);
+    
+  }
+  //dummy return, if we are here , something is wrong and we indicate error
+  return NULL;
+}
+
+
+int syscall_sem_p(user_sem_t* handle){
+  
+  handle = handle;
+  return 0;
+}
+
+
+int syscall_sem_v(user_sem_t *handle){
+
+  handle = handle;
+  return 0;
+}
+
+int syscall_sem_destroy(user_sem_t *handle){
+  handle = handle;
+  return 0;
 }
 
 /**
@@ -163,8 +216,7 @@ void syscall_handle(context_t *user_context)
       break;
     case SYSCALL_EXEC:
       user_context->cpu_regs[MIPS_REGISTER_V0]=
-	 syscall_exec(
-		      (char *) user_context->cpu_regs[MIPS_REGISTER_A1]);
+	syscall_exec((char *) user_context->cpu_regs[MIPS_REGISTER_A1]);
       break;
     case SYSCALL_EXIT:
       syscall_exit(user_context->cpu_regs[MIPS_REGISTER_A1]);
@@ -172,6 +224,23 @@ void syscall_handle(context_t *user_context)
     case SYSCALL_JOIN:
       user_context->cpu_regs[MIPS_REGISTER_V0]=
 	syscall_join(user_context->cpu_regs[MIPS_REGISTER_A1]);
+      break;
+    case SYSCALL_SEM_OPEN:      
+      user_context->cpu_regs[MIPS_REGISTER_V0]=
+	(int)syscall_sem_open((char*)user_context->cpu_regs[MIPS_REGISTER_A1],
+			 user_context->cpu_regs[MIPS_REGISTER_A2]);
+      break;
+    case SYSCALL_SEM_PROCURE:      
+      user_context->cpu_regs[MIPS_REGISTER_V0]=
+	syscall_sem_p((user_sem_t*)user_context->cpu_regs[MIPS_REGISTER_A1]);
+      break;
+    case SYSCALL_SEM_VACATE:      
+      user_context->cpu_regs[MIPS_REGISTER_V0]=
+	syscall_sem_v((user_sem_t*)user_context->cpu_regs[MIPS_REGISTER_A1]);
+      break;
+    case SYSCALL_SEM_DESTROY:      
+      user_context->cpu_regs[MIPS_REGISTER_V0]=
+	syscall_sem_destroy((user_sem_t*)user_context->cpu_regs[MIPS_REGISTER_A1]);
       break;
     default: 
       KERNEL_PANIC("Unhandled system call\n");

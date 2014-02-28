@@ -1,5 +1,5 @@
 /*
- * System calls.
+ * Library routines header files for BUENOS
  *
  * Copyright (C) 2003 Juha Aatrokoski, Timo Lilja,
  *   Leena Salmela, Teemu Takanen, Aleksi Virtanen.
@@ -30,40 +30,51 @@
  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * $Id: syscall.h,v 1.5 2005/02/23 09:34:34 lsalmela Exp $
+ * $Id: libc.h,v 1.19 2004/02/18 14:33:07 ttakanen Exp $
  *
  */
+#ifndef BUENOS_LIB_LIBC_H
+#define BUENOS_LIB_LIBC_H
 
-#ifndef BUENOS_PROC_SYSCALL
-#define BUENOS_PROC_SYSCALL
+/* This should come with the compiler (at least GCC) */
+#include <stdarg.h>
+#include <stddef.h>
+#include "lib/types.h"
 
-/* Syscall function numbers. You may add to this list but do not
- * modify the existing ones.
- */
-#define SYSCALL_HALT 0x001
-#define SYSCALL_EXEC 0x101
-#define SYSCALL_EXIT 0x102
-#define SYSCALL_JOIN 0x103
-#define SYSCALL_FORK 0x104
-#define SYSCALL_MEMLIMIT 0x105
-#define SYSCALL_OPEN 0x201
-#define SYSCALL_CLOSE 0x202
-#define SYSCALL_SEEK 0x203
-#define SYSCALL_READ 0x204
-#define SYSCALL_WRITE 0x205
-#define SYSCALL_CREATE 0x206
-#define SYSCALL_DELETE 0x207
+#define MIN(arg1,arg2) ((arg1) > (arg2) ? (arg2) : (arg1))
+#define MAX(arg1,arg2) ((arg1) > (arg2) ? (arg1) : (arg2))
 
-#define SYSCALL_SEM_OPEN    0x300
-#define SYSCALL_SEM_PROCURE 0x301
-#define SYSCALL_SEM_VACATE  0x302
-#define SYSCALL_SEM_DESTROY 0x303
 
-/* When userland program reads or writes these already open files it
- * actually accesses the console.
- */
-#define FILEHANDLE_STDIN 0
-#define FILEHANDLE_STDOUT 1
-#define FILEHANDLE_STDERR 2
+/* Kernel print routine */
+void kwrite(char *s);
 
-#endif
+/* Kernel read routine */
+void kread(char *s, int len);
+
+/* formatted printing functions */
+int kprintf(const char *, ...);
+int snprintf(char *, int, const char *, ...);
+
+/* the same with va_list arguments */
+int kvprintf(const char *, va_list);
+int vsnprintf(char *, int, const char *, va_list);
+
+/* Prototypes for random number generator functions */
+void _set_rand_seed(uint32_t seed);
+uint32_t _get_rand(uint32_t range);
+
+/* Prototypes for string manipulation functions */
+int stringcmp(const char *str1, const char *str2);
+char *stringcopy(char *target, const char *source, int buflen);
+int strlen(const char *str);
+
+/* memory copy */
+void memcopy(int buflen, void *target, const void *source);
+
+/* memory set */
+void memoryset(void *target, char value, int size);
+
+/* convert string to integer */
+int atoi(const char *s);
+
+#endif /* BUENOS_LIB_LIBC_H */

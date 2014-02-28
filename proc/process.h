@@ -1,8 +1,8 @@
 /*
  * Process startup.
  *
- * Copyright (C) 2003 Juha Aatrokoski, Timo Lilja,
- *   Leena Salmela, Teemu Takanen, Aleksi Virtanen.
+ * Copyright (C) 2003 Juha Aatrokoski, Timo Lilja, Leena Salmela,
+ *   Teemu Takanen, Aleksi Virtanen, Troels Henriksen.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -39,58 +39,50 @@
 
 #include "lib/types.h"
 
-typedef int process_id_t;
-
-void process_start(const char *executable);
-
 #define USERLAND_STACK_TOP 0x7fffeffc
 
-#define PROCESS_PTABLE_FULL  -1
-#define PROCESS_ILLEGAL_JOIN -2
+#define USERLAND_STACK_MASK (PAGE_SIZE_MASK*CONFIG_USERLAND_STACK_SIZE)
 
-#define PROCESS_MAX_PROCESSES 32
-#define FILENAME_LENGTH 20
+#define PROCESS_MAX_PROCESSES 8
 
-/* Process state, might need more states*/
+#define PROCESS_NAME_MAX 128
+
+#define MAX_OPEN_FILES 10
+
+typedef int process_id_t;
+
 typedef enum {
-  PROCESS_FREE,
-  PROCESS_RUNNING,
-  PROCESS_ZOMBIE
-} process_status_t;
+    PROCESS_FREE,
+    PROCESS_RUNNING,
+    PROCESS_ZOMBIE
+} process_state_t;
 
-
-
-/* Control block structure for processes*/
 typedef struct {
-  int pid;                 /*process id */ 
+    char executable[PROCESS_NAME_MAX];
+    process_state_t state;
+    int retval; /* Return value - negative if we have been joined. */
+    process_id_t parent; /* Parent, negative if none. */
+    process_id_t first_zombie; /* PID of first nonjoined dead child. */
+    process_id_t prev_zombie; /* PID of previous zombie sibling. */
+    process_id_t next_zombie; /* PID of next zombie sibling. */
+    int children; /* Number of nonjoined child processes. */
+} process_table_t;
 
-  char filename[FILENAME_LENGTH]; /*name of file executing*/
-
-  process_status_t status; /*current status of process*/
-
-  int retval;          /* Hold return value of the process*/
-
-} process_control_block_t;
-
-/* Initialize the process table.  This must be called during kernel
-   startup before any other process-related calls. */
-void process_init();
-
-/* Run process in a new thread. Returns the PID of the new process. */
+/* Run process in new thread, returns PID of new process. */
 process_id_t process_spawn(const char *executable);
 
-/* Stop the process and the thread it runs in. Sets the return value as well */
+process_id_t process_get_current_process(void);
+process_table_t *process_get_current_process_entry(void);
+
+/* Stop the current process and the kernel thread in which it runs. */
 void process_finish(int retval);
 
-/* Wait for the given process to terminate, returning its return value. This
- * will also mark its process table entry as free.
- * Only works on child processes */
+/* Wait for the given process to terminate, returning its return
+   value, and marking the process table entry as free. */
 int process_join(process_id_t pid);
 
-/* Return PID of current process. */
-process_id_t process_get_current_process(void);
+int process_fork(void (*func)(uint32_t), uint32_t arg);
 
-/* Return PCB of current process. */
-process_control_block_t *process_get_current_process_entry(void);
+void process_init(void);
 
 #endif

@@ -93,6 +93,12 @@ int syscall_delete(const char *filename);
 int syscall_fork(void (*func)(int), int arg);
 void *syscall_memlimit(void *heap_end);
 
+typedef void usr_sem_t;
+
+usr_sem_t* syscall_sem_open(char const* name, int value);
+int syscall_sem_p(usr_sem_t* handle);
+int syscall_sem_v(usr_sem_t* handle);
+
 #ifdef PROVIDE_STRING_FUNCTIONS
 size_t strlen(const char *s);
 char *strcpy(char *dest, const char *src);

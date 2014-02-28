@@ -33,150 +33,66 @@
  * $Id: syscall.c,v 1.3 2004/01/13 11:10:05 ttakanen Exp $
  *
  */
-
 #include "kernel/cswitch.h"
 #include "proc/syscall.h"
 #include "kernel/halt.h"
 #include "kernel/panic.h"
 #include "lib/libc.h"
 #include "kernel/assert.h"
-#include "drivers/gcd.h"
-#include "drivers/device.h"
-#include "drivers/polltty.h"
-#include "drivers/yams.h"
 #include "proc/process.h"
+#include "drivers/device.h"
+#include "drivers/gcd.h"
+#include "fs/vfs.h"
+#include "kernel/thread.h"
 #include "proc/semaphore.h"
 
-/*
- * Syscalls for buenoes
- */
-/*write syscall*/
-int syscall_write(int fhandle, const void *buffer, int length){
-  device_t *dev;
-  gcd_t *gcd;
-  int len = 0;
-  
-  /*
-   * we always write to terminal, and we don't need fhandle
-   * assign it to itself to avoid compiler warnings ie errors
-   */
-  fhandle = fhandle;
-
-  /*Find the system console (first tty)) */
-  /* Should be FILEHANDLE_STDOUT, which is 1, but when
-   * using 1 and not 0 i get kernel assert failed on dev
-   */
-  dev = device_get(YAMS_TYPECODE_TTY,0);
-  if(dev == NULL){
-    return -1;
-  }
-
-  /* Set generic char device*/
-  gcd = ( gcd_t *) dev->generic_device;
-  if(gcd == NULL){
-    return -1;
-  }
-  
-  len = gcd->write(gcd, buffer, length);
-
-  return len;
-}
-
-/*read syscall*/
-int syscall_read(int fhandle, void *buffer, int length){
-  device_t *dev;
-  gcd_t *gcd;
-  int len = 0;
-
-  /*
-   * we always read from terminal so we don't need fhandle
-   * assign it to itself to avoid compiler warnings ie. errors
-   */
-  fhandle = fhandle;
-
-  /*Find the system console (first tty)) */
-  dev = device_get(YAMS_TYPECODE_TTY,FILEHANDLE_STDIN); 
-  if(dev == NULL){
-    return -1;
-  }
-
-  /* Set genice char device*/
-  gcd = ( gcd_t *) dev->generic_device;
-  if(gcd == NULL){
-    return -1;
-  }
-
-  /*
-   * read one byte
-   */
-  len = gcd->read(gcd, buffer, length);
-  
-  return len;
-}
-
-/*join syscall return value of call to process_join with pid as arg*/
-int syscall_join(int pid){
-  return process_join(pid);
-}
-
-/*exit syscall, calls process_finish with retval as arg*/
-void syscall_exit(int retval){
-  process_finish(retval);  
-}
-
-/*exec syscall, return value of process_spawn with filename as arg*/
-int syscall_exec(const char* filename){
-  return process_spawn(filename);
-}
-
 user_sem_t *syscall_sem_open(char const *name, int value){
-  int sid ;
-  
-  if(value >= 0){
-    if(sem_name_exist(name)){ // semaphore with given name exist
-      return NULL;
-    }
-    
-    // try to get a new semaphore
-    sid = get_sem(name, value);
-    if(sid == -1){// no more free semaphores, return NULL to indicate error
-      return NULL;
-    }
-    /* if we are here, we know sid is valid, and has been set to a new
-     * user semaphore, so we use the
-     */    
-    return get_user_sem_sid(sid);
-
-  }
-  else{ // value negative
-    if(!sem_name_exist(name)){// if the name does not exist return null for e
-      return NULL;
-    }
-    // we know there is a semaphore with the name we are seeking return it
-    return get_user_sem_name(name);
-    
-  }
-  //dummy return, if we are here , something is wrong and we indicate error
-  return NULL;
+  return user_sem_open(name,value);
 }
 
 
 int syscall_sem_p(user_sem_t* handle){
-  
-  handle = handle;
-  return 0;
+
+  return user_sem_p(handle);
 }
 
 
 int syscall_sem_v(user_sem_t *handle){
-
-  handle = handle;
-  return 0;
+  return user_sem_v(handle);
 }
 
 int syscall_sem_destroy(user_sem_t *handle){
-  handle = handle;
+  user_sem_destroy(handle);
   return 0;
+}
+
+
+int syscall_write(uint32_t fd, char *s, int len)
+{
+  gcd_t *gcd;
+  device_t *dev;
+  if (fd == FILEHANDLE_STDOUT || fd == FILEHANDLE_STDERR) {
+    dev = device_get(YAMS_TYPECODE_TTY, 0);
+    gcd = (gcd_t *)dev->generic_device;
+    return gcd->write(gcd, s, len);
+  } else {
+    KERNEL_PANIC("Write syscall not finished yet.");
+    return 0;
+  }
+}
+
+int syscall_read(uint32_t fd, char *s, int len)
+{
+  gcd_t *gcd;
+  device_t *dev;
+  if (fd == FILEHANDLE_STDIN) {
+    dev = device_get(YAMS_TYPECODE_TTY, 0);
+    gcd = (gcd_t *)dev->generic_device;
+    return gcd->read(gcd, s, len);
+  } else {
+    KERNEL_PANIC("Read syscall not finished yet.");
+    return 0;
+  }
 }
 
 /**
@@ -188,44 +104,41 @@ int syscall_sem_destroy(user_sem_t *handle){
  */
 void syscall_handle(context_t *user_context)
 {
-    /* When a syscall is executed in userland, register a0 contains
-     * the number of the syscall. Registers a1, a2 and a3 contain the
-     * arguments of the syscall. The userland code expects that after
-     * returning from the syscall instruction the return value of the
-     * syscall is found in register v0. Before entering this function
-     * the userland context has been saved to user_context and after
-     * returning from this function the userland context will be
-     * restored from user_context.
-     */
+  int A1 = user_context->cpu_regs[MIPS_REGISTER_A1];
+  int A2 = user_context->cpu_regs[MIPS_REGISTER_A2];
+  int A3 = user_context->cpu_regs[MIPS_REGISTER_A3];
 
-    switch(user_context->cpu_regs[MIPS_REGISTER_A0]) {
+#define V0 (user_context->cpu_regs[MIPS_REGISTER_V0])
+
+  /* When a syscall is executed in userland, register a0 contains
+   * the number of the syscall. Registers a1, a2 and a3 contain the
+   * arguments of the syscall. The userland code expects that after
+   * returning from the syscall instruction the return value of the
+   * syscall is found in register v0. Before entering this function
+   * the userland context has been saved to user_context and after
+   * returning from this function the userland context will be
+   * restored from user_context.*/
+  switch(user_context->cpu_regs[MIPS_REGISTER_A0])
+    {
     case SYSCALL_HALT:
       halt_kernel();
       break;
-    case SYSCALL_READ:
-      user_context->cpu_regs[MIPS_REGISTER_V0] = 
-	syscall_read(user_context->cpu_regs[MIPS_REGISTER_A1],
-		     (void *) user_context->cpu_regs[MIPS_REGISTER_A2],
-                     user_context->cpu_regs[MIPS_REGISTER_A3]);
-      break;
-    case SYSCALL_WRITE:
-      user_context->cpu_regs[MIPS_REGISTER_V0]=
-	syscall_write(user_context->cpu_regs[MIPS_REGISTER_A1],
-		      (void *) user_context->cpu_regs[MIPS_REGISTER_A2],
-		      user_context->cpu_regs[MIPS_REGISTER_A3]);
-      break;
     case SYSCALL_EXEC:
-      user_context->cpu_regs[MIPS_REGISTER_V0]=
-	syscall_exec((char *) user_context->cpu_regs[MIPS_REGISTER_A1]);
+      V0 = process_spawn((char *)A1);
       break;
     case SYSCALL_EXIT:
-      syscall_exit(user_context->cpu_regs[MIPS_REGISTER_A1]);
+      process_finish(A1);
       break;
     case SYSCALL_JOIN:
-      user_context->cpu_regs[MIPS_REGISTER_V0]=
-	syscall_join(user_context->cpu_regs[MIPS_REGISTER_A1]);
+      V0 = process_join(A1);
       break;
-    case SYSCALL_SEM_OPEN:      
+    case SYSCALL_READ:
+      V0 = syscall_read(A1, (char *)A2, A3);
+      break;
+    case SYSCALL_WRITE:
+      V0 = syscall_write(A1, (char *)A2, A3);
+      break;
+case SYSCALL_SEM_OPEN:      
       user_context->cpu_regs[MIPS_REGISTER_V0]=
 	(int)syscall_sem_open((char*)user_context->cpu_regs[MIPS_REGISTER_A1],
 			 user_context->cpu_regs[MIPS_REGISTER_A2]);
@@ -242,10 +155,13 @@ void syscall_handle(context_t *user_context)
       user_context->cpu_regs[MIPS_REGISTER_V0]=
 	syscall_sem_destroy((user_sem_t*)user_context->cpu_regs[MIPS_REGISTER_A1]);
       break;
-    default: 
+    default:
       KERNEL_PANIC("Unhandled system call\n");
     }
 
-    /* Move to next instruction after system call */
-    user_context->pc += 4;
+  /* Move to next instruction after system call */
+  user_context->pc += 4;
+
+#undef V0
+
 }

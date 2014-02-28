@@ -183,6 +183,47 @@ int syscall_delete(const char *filename)
   return (int)_syscall(SYSCALL_DELETE, (uint32_t)filename, 0, 0);
 }
 
+/*
+ * A call returns a handle to a userland semaphore identified by the
+ * string specified by name, which can then be used by the calling
+ * userland process.
+ *
+ * If the argument value is zero or positive, a fresh semaphore of the
+ * given name will be created with value. On the other hand, if a
+ * semaphore with that name already exists, NULL is returned to
+ * indicate an error.
+
+ * If value is negative, the call to syscall_sem_open returns an
+ * existing semaphore in the system with the given name. If no
+ * semaphore with that name exists, NULL is returned to indicate an
+ * error.
+ */
+usr_sem_t* syscall_sem_open(char const* name, int value)
+{
+  return (usr_sem_t*)_syscall(SYSCALL_SEM_OPEN, (uint32_t)name, (uint32_t)value, 0);
+}
+
+/*
+ * A call syscall_sem_p(h) procures (executes the P operation on) the
+ * userland semaphore referred to by h. As usual, if the value of the
+ * underlying semaphore is zero, the executing process should block on
+ * the semaphore; otherwise the call should return immediately.
+ */
+int syscall_sem_p(usr_sem_t* handle)
+{
+  return (int)_syscall(SYSCALL_SEM_PROCURE, (uint32_t)handle, 0, 0);
+}
+
+/*
+ * A call syscall_sem_v(h) vacates (executes the V operation on) the
+ * userland semaphore referred to by h, unblocks a blocked process, if
+ * one exists, and increments the semaphore value otherwise.
+ */
+int syscall_sem_v(usr_sem_t* handle)
+{
+  return (int)_syscall(SYSCALL_SEM_VACATE, (uint32_t)handle, 0, 0);
+}
+
 /* The following functions are not system calls, but convenient
    library functions inspired by POSIX and the C standard library. */
 

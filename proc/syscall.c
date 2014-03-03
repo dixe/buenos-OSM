@@ -62,8 +62,7 @@ int syscall_sem_v(user_sem_t *handle){
 }
 
 int syscall_sem_destroy(user_sem_t *handle){
-  user_sem_destroy(handle);
-  return 0;
+  return user_sem_destroy(handle);
 }
 
 

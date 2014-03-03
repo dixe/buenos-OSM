@@ -20,6 +20,7 @@ void user_semaphore_init(){
 }
 
 user_sem_t *user_sem_open(char const *name, int value){
+
   int sid ;
   
   if(value >= 0){
@@ -47,6 +48,7 @@ user_sem_t *user_sem_open(char const *name, int value){
   return NULL;
 }
 
+//Check if semaphore with given name exist, return 1 if one exist and 0 if not
 int sem_name_exist(char const *name){
   int exist = 0;
   int i;
@@ -59,6 +61,7 @@ int sem_name_exist(char const *name){
   return exist;
 }
 
+// try to get a kernel semaphore, return sid i.e. table index, -1 on error
 int get_sem(char const* name, int value){
 
   int sid = -1;
@@ -92,19 +95,18 @@ int get_sem(char const* name, int value){
   // set the name
   stringcopy(sem_table[sid].name, name, SEMAPHORE_NAME_LENGTH);
 
-
   spinlock_release(&sem_table_slock);
   _interrupt_set_state(intr_status);
 
   return sid;
 }
 
-
+// return user semaphore given sid
 user_sem_t* get_user_sem_sid(int sid){
-  // might need a lock here ??
   return &sem_table[sid];
 }
 
+// return user semaphore given name, null if none exist
 user_sem_t* get_user_sem_name(char const* name){
   int sid = -1;
   int i;
@@ -122,29 +124,32 @@ user_sem_t* get_user_sem_name(char const* name){
   return &sem_table[sid];
 }
 
+// return 0 success -1 on error
 int user_sem_p(user_sem_t* handle){
   //call kernel semaphore_P on the kernel semaphore in handle
   if (handle == NULL){
-    kprintf("handle is null\n");
+    return -1;
   }
 
-  kprintf("Call semaphore_p\n");
-  semaphore_P(handle->ksem);  
-  kprintf("Called semaphore_p\n");
-
-  // what to return?
+  semaphore_P(handle->ksem);
+  
   return 0;
 }
 
-
+// return 0 success -1 on error
 int user_sem_v(user_sem_t* handle){
+  if (handle == NULL){
+    return -1;
+  }
   //call kernel semaphore_V on the kernel semaphore in handle
   semaphore_V(handle->ksem);
   return 0;
 }
 
 int user_sem_destroy(user_sem_t* handle){
-  
+   if (handle == NULL){
+    return -1;
+  }
   //call kernel semaphore_destroy
   semaphore_destroy(handle->ksem);
 

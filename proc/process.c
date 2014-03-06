@@ -166,10 +166,9 @@ void process_start(process_id_t pid)
   /* Put the mapped pages into TLB. Here we again assume that the
      pages fit into the TLB. After writing proper TLB exception
      handling this call should be skipped. */
-  intr_status = _interrupt_disable();
-  tlb_fill(my_entry->pagetable);
-  _interrupt_set_state(intr_status);
-
+  /*  intr_status = _interrupt_disable();
+      _interrupt_set_state(intr_status);
+  */
   /* Now we may use the virtual addresses of the segments. */
 
   /* Allocate and map pages for the segments. We assume that
@@ -222,9 +221,8 @@ void process_start(process_id_t pid)
   }
 
   /* Insert page mappings again to TLB to take read-only bits into use */
-  intr_status = _interrupt_disable();
-  tlb_fill(my_entry->pagetable);
-  _interrupt_set_state(intr_status);
+  //  intr_status = _interrupt_disable();
+  //  _interrupt_set_state(intr_status);
 
 
   /* Initialize the user context. (Status register is handled by

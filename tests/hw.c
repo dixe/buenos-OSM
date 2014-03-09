@@ -10,7 +10,6 @@ int main(void)
 {
   char *name;
   int count;
-  heap_init();
   puts("Hello, World!\n\n");
   while (1) {
     name = (char*)malloc(BUFFER_SIZE);

@@ -118,7 +118,6 @@ static const int BUFFER_SIZE = 20;
 int main() {
   stack_t stack;
   char buffer[BUFFER_SIZE];
-  heap_init();
   stack_init(&stack);
   while (1) {
     readline(buffer, BUFFER_SIZE);

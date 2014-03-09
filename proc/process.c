@@ -115,6 +115,7 @@ void process_start(process_id_t pid)
   elf_info_t elf;
   openfile_t file;
   char *executable;
+  process_table_t *my_proc;
 
   int i;
 
@@ -122,6 +123,7 @@ void process_start(process_id_t pid)
 
   my_entry = thread_get_current_thread_entry();
   my_entry->process_id = pid;
+  my_proc  = process_get_current_process_entry();
   executable = process_table[pid].executable;
 
   /* If the pagetable of this thread is not NULL, we are trying to
@@ -163,6 +165,10 @@ void process_start(process_id_t pid)
            (USERLAND_STACK_TOP & PAGE_SIZE_MASK) - i*PAGE_SIZE, 1);
   }
   
+  // set the heap end to just after the stack
+  my_proc->heap_end = 
+    (void *)(USERLAND_STACK_TOP & PAGE_SIZE_MASK) - (CONFIG_USERLAND_STACK_SIZE )*PAGE_SIZE;
+
   /* Put the mapped pages into TLB. Here we again assume that the
      pages fit into the TLB. After writing proper TLB exception
      handling this call should be skipped. */

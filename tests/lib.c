@@ -42,7 +42,6 @@
 #include "proc/syscall.h"
 #include "tests/lib.h"
 
-
 /* Halt the system (sync disks and power off). This function will
  * never return. 
  */
@@ -741,6 +740,8 @@ free_block_t *free_list = NULL;
 void *malloc(size_t size) {
   free_block_t *block;
   free_block_t **prev_p; /* Previous link so we can remove an element */
+  void * heap_end;
+  void * heap_end_new;
   if (size == 0) {
     return NULL;
   }
@@ -776,8 +777,19 @@ void *malloc(size_t size) {
   }
    
   /* No heap space left.
-     allocate new free_block_t and try again
-  */
+   *  allocate new free_block_t and try again
+  */  
+  // get current heap_end
+  heap_end = syscall_memlimit(NULL);
+  // alloc using the heap_end
+  heap_end_new = syscall_memlimit((void*)((size_t)heap_end + size));
+
+  //  free_block_t *new_block = (free_block_t*) ((byte*)heap_end = heap_end_new);
+
+  // try to call malloc again
+  if(heap_end_new != NULL){
+    return malloc(size);
+  }
 
   return NULL;
 }
@@ -789,7 +801,6 @@ void free(void *ptr)
     free_block_t *block = (free_block_t*)((byte*)ptr-sizeof(size_t));
     free_block_t *cur_block;
     free_block_t *prev_block;
-
     /* Iterate through the free list, which is sorted by
        increasing address, and insert the newly freed block at the
        proper position. */

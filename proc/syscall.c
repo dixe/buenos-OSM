@@ -45,6 +45,8 @@
 #include "fs/vfs.h"
 #include "kernel/thread.h"
 #include "proc/semaphore.h"
+#include "vm/vm.h"
+#include "vm/pagepool.h"
 
 user_sem_t *syscall_sem_open(char const *name, int value){
   return user_sem_open(name,value);
@@ -96,19 +98,40 @@ int syscall_read(uint32_t fd, char *s, int len)
 
 void* syscall_memlimit(void *heap_end){
   
-  // get the current process
-  process_table_t *my_proc = process_get_current_process_entry();
+  thread_table_t *my_entry;
+  uint32_t i;
+  uint32_t phys_page;
+  process_table_t *my_proc;
+
+  // get the current process and thread
+  my_proc  = process_get_current_process_entry();
+  my_entry = thread_get_current_thread_entry();
+
   if(heap_end == NULL){
     //if NULL return current heap_end
-    return my_proc->head_end;
+    return my_proc->heap_end;
   }
   //if the head_end is below current head_end, return NULL
-  if(heap_end <   my_proc->head_end){
+  if(heap_end <   my_proc->heap_end){
     return NULL;
   }
-  // set the head end op my_proc to head end
-  my_proc->head_end = heap_end;
-  return my_proc->head_end;
+  
+  /* Alloc and map more heap space, heap grow down
+   * heap_end is the virtual adress
+   */
+   
+  for( i = (uint32_t) my_proc->heap_end; i < (uint32_t)heap_end; i+= PAGE_SIZE){
+    phys_page = pagepool_get_phys_page();
+    KERNEL_ASSERT(phys_page != 0);
+    kprintf("mapping vpage: %ud\n",(((uint32_t) my_proc->heap_end) & PAGE_SIZE_MASK) + i );
+    vm_map(my_entry->pagetable, phys_page, 
+	   (((uint32_t)my_proc->heap_end) & PAGE_SIZE_MASK) - i ,1); 
+  }
+
+  kprintf("in memlimit\n");
+  my_proc->heap_end = heap_end;
+  
+  return my_proc->heap_end;
 }
 
 /**

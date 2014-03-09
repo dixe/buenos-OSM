@@ -778,9 +778,6 @@ void *malloc(size_t size) {
   /* No heap space left.
      allocate new free_block_t and try again
   */
-  syscall_memlinit();
-  
-  
   return NULL;
 }
 

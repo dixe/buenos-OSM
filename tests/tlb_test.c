@@ -2,7 +2,6 @@
 
 int main(){
   char *c;
-  heap_init();
   c  = (char*) malloc(16); // malloc
   int i;
   for(i = 0; i < 16; i++){

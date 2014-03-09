@@ -162,7 +162,7 @@ void process_start(process_id_t pid)
     vm_map(my_entry->pagetable, phys_page,
            (USERLAND_STACK_TOP & PAGE_SIZE_MASK) - i*PAGE_SIZE, 1);
   }
-
+  
   /* Put the mapped pages into TLB. Here we again assume that the
      pages fit into the TLB. After writing proper TLB exception
      handling this call should be skipped. */

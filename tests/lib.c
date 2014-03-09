@@ -734,19 +734,7 @@ typedef struct free_block {
 
 static const size_t MIN_ALLOC_SIZE = sizeof(free_block_t);
 
-free_block_t *free_list;
-
-byte heap[HEAP_SIZE];
-
-/* Initialise the heap - malloc et al won't work unless this is called
-   first. */
-void heap_init()
-{
-  free_list = (free_block_t*) heap;
-  free_list->size = HEAP_SIZE;
-  free_list->next = NULL;
-}
-
+free_block_t *free_list = NULL;
 
 /* Return a block of at least size bytes, or NULL if no such block 
    can be found.  */
@@ -786,8 +774,13 @@ void *malloc(size_t size) {
     }
     /* Else, check the next block. */
   }
-
-  /* No heap space left. */
+   
+  /* No heap space left.
+     allocate new free_block_t and try again
+  */
+  syscall_memlinit();
+  
+  
   return NULL;
 }
 

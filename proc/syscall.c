@@ -94,6 +94,23 @@ int syscall_read(uint32_t fd, char *s, int len)
   }
 }
 
+void* syscall_memlimit(void *heap_end){
+  
+  // get the current process
+  process_table_t *my_proc = process_get_current_process_entry();
+  if(heap_end == NULL){
+    //if NULL return current heap_end
+    return my_proc->head_end;
+  }
+  //if the head_end is below current head_end, return NULL
+  if(heap_end <   my_proc->head_end){
+    return NULL;
+  }
+  // set the head end op my_proc to head end
+  my_proc->head_end = heap_end;
+  return my_proc->head_end;
+}
+
 /**
  * Handle system calls. Interrupts are enabled when this function is
  * called.
@@ -153,6 +170,9 @@ case SYSCALL_SEM_OPEN:
     case SYSCALL_SEM_DESTROY:      
       user_context->cpu_regs[MIPS_REGISTER_V0]=
 	syscall_sem_destroy((user_sem_t*)user_context->cpu_regs[MIPS_REGISTER_A1]);
+      break;
+    case SYSCALL_MEMLIMIT:
+      V0 = (int) syscall_memlimit((void *) A1);
       break;
     default:
       KERNEL_PANIC("Unhandled system call\n");

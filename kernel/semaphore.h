@@ -41,9 +41,9 @@
 #include "kernel/thread.h"
 
 typedef struct {
-  spinlock_t slock;
-  int value;
-  TID_t creator;
+    spinlock_t slock;
+    int value;
+    TID_t creator;
 } semaphore_t;
 
 void semaphore_init(void);

@@ -72,20 +72,20 @@ void user_exception_handle(int exception)
     switch(exception) {
     case EXCEPTION_TLBM:
       tlb_modified_exception();
-	break;
+      break;
     case EXCEPTION_TLBL:
       tlb_load_exception();
-	break;
+      break;
     case EXCEPTION_TLBS:
       kprintf("store exception\n");
       tlb_store_exception();
-	break;
+      break;
     case EXCEPTION_ADDRL:
-	KERNEL_PANIC("Address Error Load: not handled yet");
-	break;
+      KERNEL_PANIC("Address Error Load: not handled yet");
+      break;
     case EXCEPTION_ADDRS:
-	KERNEL_PANIC("Address Error Store: not handled yet");
-	break;
+      KERNEL_PANIC("Address Error Store: not handled yet");
+      break;
     case EXCEPTION_BUSI:
 	KERNEL_PANIC("Bus Error Instruction: not handled yet");
 	break;

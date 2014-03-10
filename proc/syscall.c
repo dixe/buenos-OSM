@@ -47,6 +47,10 @@
 #include "proc/semaphore.h"
 #include "vm/vm.h"
 #include "vm/pagepool.h"
+//tmp imports
+#include "kernel/interrupt.h"
+#include "vm/tlb.h"
+
 
 user_sem_t *syscall_sem_open(char const *name, int value){
   return user_sem_open(name,value);
@@ -103,6 +107,7 @@ void* syscall_memlimit(void *heap_end){
   uint32_t phys_page;
   process_table_t *my_proc;
 
+
   // get the current process and thread
   my_proc  = process_get_current_process_entry();
   my_entry = thread_get_current_thread_entry();
@@ -111,39 +116,51 @@ void* syscall_memlimit(void *heap_end){
     kprintf("arg is null returning current heap_end\n");
     return my_proc->heap_end;
   }
-  //if the head_end is below current head_end, return NULL
-  if(heap_end < my_proc->heap_end){
+
+  if(heap_end > my_proc->heap_end){
     kprintf("Heap_end is greater then old heap_end\n");
     return NULL;
   }
 
-  // get the size we are trying to alloc old heap end -  new heap_end
+  //if the head_end is below current head_end, return NULL
   uint32_t size = (uint32_t) (my_proc->heap_end - (uint32_t) heap_end); 
-  
-
   kprintf("size is: %d\n",size);
-  kprintf("new Heap_end: %ud\nold Heap_end: %ud\n",(uint32_t)heap_end, (uint32_t) my_proc->heap_end);
-  kprintf("new Heap_end - heap_end: %d\n",(uint32_t)heap_end - (uint32_t) my_proc->heap_end);
-  KERNEL_PANIC("went in loop in memlimit\n");
-  int inl = 0;
-  for( i = 0; i < (uint32_t)heap_end; i+= PAGE_SIZE){
+  
+  // align current_heap_end
+  while(((uint32_t)my_proc->heap_end % 4) != 0){
+    my_proc->heap_end += 1;
+  }
+
+  // set i to old heap_end, while > new_heap_end, i -= PAGE_SIZE
+  // update heap_end to point to actual allocated space  
+  uint32_t last_vaddr = (uint32_t) heap_end;
+  for( i = (uint32_t)my_proc->heap_end; i > (uint32_t)heap_end; i-= PAGE_SIZE){
     kprintf("In loop\n");
     phys_page = pagepool_get_phys_page();
     KERNEL_ASSERT(phys_page != 0);
-    vm_map(my_entry->pagetable, phys_page, ((uint32_t) i & PAGE_SIZE_MASK), 1); 
-    inl = 1;
-    
+    kprintf("vpage is: %u\n",(uint32_t) i);
+    kprintf("old_heap_end is: %d\n",(uint32_t)my_proc->heap_end);
+    kprintf("new_heap_end is: %d\n",(uint32_t)heap_end);
+    vm_map(my_entry->pagetable, phys_page, (uint32_t) i, 1);
+    last_vaddr = i - PAGE_SIZE ;
   }
   
-  if (inl){
-    KERNEL_PANIC("went in loop in memlimit\n");
+  // if i is lower the heap_end, then we allocated more space then needed
+  // set heap_end to end of actual allocated + 4 for the next free pageb
+  if(last_vaddr < (uint32_t) heap_end){
+    kprintf("last vaddr < heap_end\n");
+    heap_end = (void*) (last_vaddr - 4);
   }
-  else if(heap_end == my_proc->heap_end){
+  kprintf("last vaddr is: %u\n", last_vaddr);
+  kprintf("PAGE_SIZE is: %u\n", PAGE_SIZE);
+  
+
+  if(heap_end == my_proc->heap_end){
     KERNEL_PANIC("heap_end is equal to old heap_end\n");
   }
 
   my_proc->heap_end = heap_end;  
-
+  kprintf("heap end is: %d\n", (uint32_t) my_proc->heap_end);
   return my_proc->heap_end;
 }
 

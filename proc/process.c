@@ -165,15 +165,14 @@ void process_start(process_id_t pid)
            (USERLAND_STACK_TOP & PAGE_SIZE_MASK) - i*PAGE_SIZE, 1);
   }
   
-  // set the heap end to just after stack, ie last allocated adress + PAGE_SIZE
-  my_proc->heap_end = (void*) (USERLAND_STACK_TOP - CONFIG_USERLAND_STACK_SIZE * PAGE_SIZE) + PAGE_SIZE;
+  // set the heap end to just after stack, ie last allocated adress - PAGE_SIZE
+  my_proc->heap_end = (void*) (USERLAND_STACK_TOP - CONFIG_USERLAND_STACK_SIZE * PAGE_SIZE) - PAGE_SIZE;
 
   /* Put the mapped pages into TLB. Here we again assume that the
      pages fit into the TLB. After writing proper TLB exception
      handling this call should be skipped. */
-  /*  intr_status = _interrupt_disable();
-      _interrupt_set_state(intr_status);
-  */
+  
+
   /* Now we may use the virtual addresses of the segments. */
 
   /* Allocate and map pages for the segments. We assume that
@@ -224,11 +223,6 @@ void process_start(process_id_t pid)
   for(i = 0; i < (int)elf.ro_pages; i++) {
     vm_set_dirty(my_entry->pagetable, elf.ro_vaddr + i*PAGE_SIZE, 0);
   }
-
-  /* Insert page mappings again to TLB to take read-only bits into use */
-  //  intr_status = _interrupt_disable();
-  //  _interrupt_set_state(intr_status);
-
 
   /* Initialize the user context. (Status register is handled by
      thread_goto_userland) */

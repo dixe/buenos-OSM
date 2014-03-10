@@ -10,11 +10,10 @@ int main(void)
 {
   char *name;
   int count;
+  heap_init();
   puts("Hello, World!\n\n");
   while (1) {
-    printf("before name = (char*)malloc\n");
     name = (char*)malloc(BUFFER_SIZE);
-    printf("after name = (char*)malloc\n");
     printf("Please enter your name (max %d chars): ", BUFFER_SIZE);
     count = readline(name, BUFFER_SIZE);
     if (count == 0) {

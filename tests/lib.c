@@ -734,20 +734,25 @@ typedef struct free_block {
 
 static const size_t MIN_ALLOC_SIZE = sizeof(free_block_t);
 
-/* Return a block of at least size bytes, or NULL if no such block 
-   can be found.  */
-free_block_t *free_list = NULL;
+free_block_t *free_list;
+
+byte heap[HEAP_SIZE];
+
+/* Initialise the heap - malloc et al won't work unless this is called
+   first. */
+void heap_init()
+{
+  free_list = (free_block_t*) heap;
+  free_list->size = HEAP_SIZE;
+  free_list->next = NULL;
+}
+
 
 /* Return a block of at least size bytes, or NULL if no such block 
    can be found.  */
 void *malloc(size_t size) {
   free_block_t *block;
   free_block_t **prev_p; /* Previous link so we can remove an element */
-  void * heap_end;
-  void * heap_end_new;
-  free_block_t *cur_block;
-  free_block_t *prev_block;
-
   if (size == 0) {
     return NULL;
   }
@@ -781,66 +786,14 @@ void *malloc(size_t size) {
     }
     /* Else, check the next block. */
   }
-  
-  /* No heap space left.
-   *  allocate new free_block_t and try again
-  */  
-  // get current heap_end
-  heap_end = syscall_memlimit(NULL);
-  printf("malloc heap_end: %u\n", (uint32_t) heap_end);
-  // alloc using the heap_end
-  heap_end_new = syscall_memlimit(heap_end - size);
-  free_block_t *new_block = (free_block_t*)(byte*)(heap_end - sizeof(size_t)); 
-  
-  //free list is empty, set it to the new block  
-  free_list = new_block;
-  
-  // insert block as done in free()
-  for (cur_block = free_list, prev_block = NULL; 
-       ;
-       prev_block = cur_block, cur_block = cur_block->next) {
-    if (cur_block > new_block || cur_block == NULL) {
-      /* Insert block here. */
-      if (prev_block == NULL) {
-        free_list = new_block;
-      } else {
-        prev_block->next = new_block;
-        }
-      new_block->next = cur_block;
-      
-      if (prev_block != NULL &&
-          (size_t)((byte*)new_block - (byte*)prev_block) == prev_block->size) {
-        /* Merge with previous. */
-        prev_block->size += new_block->size;
-        prev_block->next = cur_block;
-        new_block = prev_block;
-      }
-      
-      if (cur_block != NULL &&
-          (size_t)((byte*)cur_block - (byte*)new_block) == new_block->size) {
-        /* Merge with next. */
-        new_block->size += cur_block->size;
-        new_block->next = cur_block->next;
-      }
-      printf("breaking from malloc block insert\n");
-      break;
-    }
-    printf("malloc, cur_block is: %d, newxt is: %d\n",(size_t)cur_block, (size_t)cur_block->next);
-  }
 
-
-  // try to call malloc again
-  if(heap_end_new != NULL){
-    return malloc(size);
-  }
-
+  /* No heap space left. */
   return NULL;
 }
 
 /* Return the block pointed to by ptr to the free pool. */
 void free(void *ptr)
 {
-  printf("In free function from hw\n");
   if (ptr != NULL) { /* Freeing NULL is a no-op */
     free_block_t *block = (free_block_t*)((byte*)ptr-sizeof(size_t));
     free_block_t *cur_block;
@@ -853,7 +806,6 @@ void free(void *ptr)
          ;
          prev_block = cur_block, cur_block = cur_block->next) {
       if (cur_block > block || cur_block == NULL) {
-        printf("cur_block > block or cur_block == NULL\n");
         /* Insert block here. */
         if (prev_block == NULL) {
           free_list = block;
@@ -876,10 +828,8 @@ void free(void *ptr)
           block->size += cur_block->size;
           block->next = cur_block->next;
         }
-        printf("returning from free function in hw\n");
         return;
       }
-      printf("cur_block is: %d, newxt is: %d\n",(size_t)cur_block, (size_t)cur_block->next);
     }
   }
 }

@@ -108,29 +108,42 @@ void* syscall_memlimit(void *heap_end){
   my_entry = thread_get_current_thread_entry();
 
   if(heap_end == NULL){
-    //if NULL return current heap_end
+    kprintf("arg is null returning current heap_end\n");
     return my_proc->heap_end;
   }
   //if the head_end is below current head_end, return NULL
-  if(heap_end <   my_proc->heap_end){
+  if(heap_end < my_proc->heap_end){
+    kprintf("Heap_end is greater then old heap_end\n");
     return NULL;
   }
+
+  // get the size we are trying to alloc old heap end -  new heap_end
+  uint32_t size = (uint32_t) (my_proc->heap_end - (uint32_t) heap_end); 
   
-  /* Alloc and map more heap space, heap grow down
-   * heap_end is the virtual adress
-   */
-   
-  for( i = (uint32_t) my_proc->heap_end; i < (uint32_t)heap_end; i+= PAGE_SIZE){
+
+  kprintf("size is: %d\n",size);
+  kprintf("new Heap_end: %ud\nold Heap_end: %ud\n",(uint32_t)heap_end, (uint32_t) my_proc->heap_end);
+  kprintf("new Heap_end - heap_end: %d\n",(uint32_t)heap_end - (uint32_t) my_proc->heap_end);
+  KERNEL_PANIC("went in loop in memlimit\n");
+  int inl = 0;
+  for( i = 0; i < (uint32_t)heap_end; i+= PAGE_SIZE){
+    kprintf("In loop\n");
     phys_page = pagepool_get_phys_page();
     KERNEL_ASSERT(phys_page != 0);
-    kprintf("mapping vpage: %ud\n",(((uint32_t) my_proc->heap_end) & PAGE_SIZE_MASK) + i );
-    vm_map(my_entry->pagetable, phys_page, 
-	   (((uint32_t)my_proc->heap_end) & PAGE_SIZE_MASK) - i ,1); 
+    vm_map(my_entry->pagetable, phys_page, ((uint32_t) i & PAGE_SIZE_MASK), 1); 
+    inl = 1;
+    
+  }
+  
+  if (inl){
+    KERNEL_PANIC("went in loop in memlimit\n");
+  }
+  else if(heap_end == my_proc->heap_end){
+    KERNEL_PANIC("heap_end is equal to old heap_end\n");
   }
 
-  kprintf("in memlimit\n");
-  my_proc->heap_end = heap_end;
-  
+  my_proc->heap_end = heap_end;  
+
   return my_proc->heap_end;
 }
 

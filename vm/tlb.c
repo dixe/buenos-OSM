@@ -52,13 +52,12 @@ void tlb_load_exception(void)
   tlb_exception_state_t tes;
   _tlb_get_exception_state(&tes);
   int found = 0;
-  
   //loop over every pagetable entry and see if the page match
   //and the asid matches
   //if we get a match, write to random tlb_entry
   int i;
   for (i = 0; i < PAGETABLE_ENTRIES; i++){
-    if((me->pagetable->entries[i].VPN2 == tes.badvpn2)){
+    if((me->pagetable->entries[i].VPN2 == tes.badvpn2) && ((me->pagetable->entries[i].V0) & 1 || (me->pagetable->entries[i].V1) & 1)){
       _tlb_write_random(&(me->pagetable->entries[i]));
       found = 1;
       break;
@@ -68,7 +67,6 @@ void tlb_load_exception(void)
   if(!found){
     kprintf("badvaddr: %d \nbadvpn2: %d \nasid: %d \n", 
 	    tes.badvaddr, tes.badvpn2, tes.asid);
-    
     //we did not find the page we were looking for  
     KERNEL_PANIC("TLB load exception didn't find the page\n");
   }

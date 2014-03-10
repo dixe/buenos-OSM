@@ -42,6 +42,7 @@
 #include "proc/syscall.h"
 #include "tests/lib.h"
 
+
 /* Halt the system (sync disks and power off). This function will
  * never return. 
  */
@@ -733,6 +734,22 @@ typedef struct free_block {
 
 static const size_t MIN_ALLOC_SIZE = sizeof(free_block_t);
 
+free_block_t *free_list;
+
+byte heap[HEAP_SIZE];
+
+/* Initialise the heap - malloc et al won't work unless this is called
+   first. */
+void heap_init()
+{
+  free_list = (free_block_t*) heap;
+  free_list->size = HEAP_SIZE;
+  free_list->next = NULL;
+}
+
+
+/* Return a block of at least size bytes, or NULL if no such block 
+   can be found.  */
 free_block_t *free_list = NULL;
 
 /* Return a block of at least size bytes, or NULL if no such block 
@@ -742,6 +759,7 @@ void *malloc(size_t size) {
   free_block_t **prev_p; /* Previous link so we can remove an element */
   void * heap_end;
   void * heap_end_new;
+
   if (size == 0) {
     return NULL;
   }
@@ -775,16 +793,33 @@ void *malloc(size_t size) {
     }
     /* Else, check the next block. */
   }
-   
+  
   /* No heap space left.
    *  allocate new free_block_t and try again
   */  
   // get current heap_end
   heap_end = syscall_memlimit(NULL);
   // alloc using the heap_end
-  heap_end_new = syscall_memlimit((void*)((size_t)heap_end + size));
+  getc();
+  heap_end_new = syscall_memlimit(heap_end - 128);
+  getc();
+  free_block_t *new_block = (free_block_t*)((byte*)heap_end_new + sizeof(size_t));
+  new_block->size = ( heap_end - heap_end_new);
+  
+  //free list is empty, set it to the new block  
+  free_list = new_block;
 
-  //  free_block_t *new_block = (free_block_t*) ((byte*)heap_end = heap_end_new);
+  block = free_list;
+  // search the free list until we get to the end, then add the new block
+  while(block != NULL){
+    if(block->next != NULL){
+      block = block->next;      
+    }
+    else{ // next block is null, set it to the newly allocated block
+      block->next = new_block;
+      break;
+    }
+  }
 
   // try to call malloc again
   if(heap_end_new != NULL){
@@ -801,6 +836,7 @@ void free(void *ptr)
     free_block_t *block = (free_block_t*)((byte*)ptr-sizeof(size_t));
     free_block_t *cur_block;
     free_block_t *prev_block;
+
     /* Iterate through the free list, which is sorted by
        increasing address, and insert the newly freed block at the
        proper position. */

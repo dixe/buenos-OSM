@@ -165,9 +165,8 @@ void process_start(process_id_t pid)
            (USERLAND_STACK_TOP & PAGE_SIZE_MASK) - i*PAGE_SIZE, 1);
   }
   
-  // set the heap end to just after the stack
-  my_proc->heap_end = 
-    (void *)(USERLAND_STACK_TOP & PAGE_SIZE_MASK) - (CONFIG_USERLAND_STACK_SIZE )*PAGE_SIZE;
+  // set the heap end to just after stack, ie last allocated adress + PAGE_SIZE
+  my_proc->heap_end = (void*) (USERLAND_STACK_TOP - CONFIG_USERLAND_STACK_SIZE * PAGE_SIZE) + PAGE_SIZE;
 
   /* Put the mapped pages into TLB. Here we again assume that the
      pages fit into the TLB. After writing proper TLB exception

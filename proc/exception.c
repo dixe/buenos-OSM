@@ -77,7 +77,6 @@ void user_exception_handle(int exception)
       tlb_load_exception();
       break;
     case EXCEPTION_TLBS:
-      kprintf("store exception\n");
       tlb_store_exception();
       break;
     case EXCEPTION_ADDRL:

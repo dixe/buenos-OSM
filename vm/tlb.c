@@ -70,6 +70,8 @@ void tlb_load_exception(void)
     //we did not find the page we were looking for  
     KERNEL_PANIC("TLB load exception didn't find the page\n");
   }
+  kprintf("badvaddr: %d \nbadvpn2: %d \nasid: %d \n", 
+	  tes.badvaddr, tes.badvpn2, tes.asid);
 }
 
 void tlb_store_exception(void)

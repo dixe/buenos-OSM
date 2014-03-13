@@ -47,32 +47,82 @@
 
 int syscall_write(uint32_t fd, char *s, int len)
 {
-  gcd_t *gcd;
-  device_t *dev;
-  if (fd == FILEHANDLE_STDOUT || fd == FILEHANDLE_STDERR) {
-    dev = device_get(YAMS_TYPECODE_TTY, 0);
-    gcd = (gcd_t *)dev->generic_device;
-    return gcd->write(gcd, s, len);
-  } else {
-    KERNEL_PANIC("Write syscall not finished yet.");
-    return 0;
+  // if fd > 2 then it is a file and not console, call vfs write, with fd - 3
+  if(fd > 2){
+    return vfs_write(fd - 3 , s, len); 
+  }
+  else{
+    gcd_t *gcd;
+    device_t *dev;
+    if (fd == FILEHANDLE_STDOUT || fd == FILEHANDLE_STDERR) {
+      dev = device_get(YAMS_TYPECODE_TTY, 0);
+      gcd = (gcd_t *)dev->generic_device;
+      return gcd->write(gcd, s, len);
+    } else {
+      KERNEL_PANIC("Write syscall not finished yet.");
+      return 0;
+    }
   }
 }
 
 int syscall_read(uint32_t fd, char *s, int len)
 {
-  gcd_t *gcd;
-  device_t *dev;
-  if (fd == FILEHANDLE_STDIN) {
-    dev = device_get(YAMS_TYPECODE_TTY, 0);
-    gcd = (gcd_t *)dev->generic_device;
-    return gcd->read(gcd, s, len);
-  } else {
-    KERNEL_PANIC("Read syscall not finished yet.");
-    return 0;
+  // if fd > 2 then it is a file and not console, call vfs read, with fd-3
+  if(fd > 2){
+    return vfs_read(fd - 3, s, len); 
+  }
+  else{
+    gcd_t *gcd;
+    device_t *dev;
+    if (fd == FILEHANDLE_STDIN) {
+      dev = device_get(YAMS_TYPECODE_TTY, 0);
+      gcd = (gcd_t *)dev->generic_device;
+      return gcd->read(gcd, s, len);
+    } else {
+      KERNEL_PANIC("Read syscall not finished yet.");
+      return 0;
+    }
   }
 }
 
+int syscall_open(char* pathname){
+  // vfs return file handles from 0 and up, we add 3
+  // because 0, 1 and 2 is reserved for stdin, stdout and stderr
+
+  int ret = vfs_open(pathname);
+  if( ret < 0){// if ret <0, there is error
+    return ret;
+  }
+  else{
+    return ret + 3 ;
+  }
+}
+int syscall_close(int filehandle){
+  return vfs_close(filehandle - 3);
+}
+int syscall_create(char* pathname, int size){
+  return vfs_create(pathname, size);
+}
+int syscall_delete(char* pathname){
+  return vfs_remove(pathname);
+}
+
+int syscall_seek(int filehande, int offset){
+  
+  return vfs_seek(filehande - 3, offset);
+}
+
+int syscall_filecount(char* name){
+  name = name;
+  return 0;
+}
+
+int syscall_file(char* name, int index, char* buffer){
+  name = name;
+  index = index;
+  buffer = buffer;
+  return 0;
+}
 /**
  * Handle system calls. Interrupts are enabled when this function is
  * called.
@@ -115,6 +165,27 @@ void syscall_handle(context_t *user_context)
       break;
     case SYSCALL_WRITE:
       V0 = syscall_write(A1, (char *)A2, A3);
+      break;
+    case SYSCALL_OPEN:
+      V0 = syscall_open((char *)A1);
+      break;
+    case SYSCALL_CLOSE:
+      V0 = syscall_close(A1);
+      break;
+    case SYSCALL_SEEK:
+      V0 = syscall_seek(A1, A2);
+      break;
+    case SYSCALL_CREATE:
+      V0 = syscall_create((char*)A1, A2);
+      break;
+    case SYSCALL_DELETE:
+      V0 = syscall_delete((char*)A1);
+      break;
+    case SYSCALL_FILECOUNT:
+      V0 = syscall_filecount((char*)A1);
+      break;
+    case SYSCALL_FILE:
+      V0 = syscall_file((char*)A1, A2, (char*) A3);
       break;
     default:
       KERNEL_PANIC("Unhandled system call\n");

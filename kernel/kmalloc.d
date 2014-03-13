@@ -1,2 +1,3 @@
-kernel/kmalloc.o: kernel/kmalloc.c lib/types.h lib/libc.h drivers/device.h \
- drivers/yams.h kernel/kmalloc.h kernel/panic.h
+kernel/kmalloc.o: kernel/kmalloc.c lib/types.h lib/libc.h lib/types.h \
+  drivers/device.h lib/types.h drivers/yams.h kernel/kmalloc.h \
+  drivers/yams.h kernel/panic.h

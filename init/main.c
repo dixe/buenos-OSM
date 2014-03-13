@@ -56,7 +56,7 @@
 #include "net/network.h"
 #include "proc/process.h"
 #include "vm/vm.h"
-#include "proc/semaphore.h"
+
 /**
  * Fallback function for system startup. This function is executed
  * if the initial startup program (shell or other userland process given
@@ -208,9 +208,6 @@ void init(void)
 
   kwrite("Initializing semaphores\n");
   semaphore_init();
-
-  kwrite("Initialize  user semaphores");
-  user_semaphore_init();
 
   kwrite("Initializing device drivers\n");
   device_init();

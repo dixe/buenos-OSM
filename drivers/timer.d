@@ -1,2 +1,2 @@
-drivers/timer.o: drivers/timer.c lib/types.h kernel/interrupt.h drivers/device.h \
- drivers/yams.h
+drivers/timer.o: drivers/timer.c lib/types.h kernel/interrupt.h lib/types.h \
+  drivers/device.h lib/types.h drivers/yams.h

@@ -33,7 +33,7 @@
  * $Id: tlb.c,v 1.6 2004/04/16 10:54:29 ttakanen Exp $
  *
  */
-#include "kernel/thread.h"
+
 #include "kernel/panic.h"
 #include "kernel/assert.h"
 #include "vm/tlb.h"
@@ -41,43 +41,17 @@
 
 void tlb_modified_exception(void)
 {
-  KERNEL_PANIC("Program error TLB modified exception");
+    KERNEL_PANIC("Unhandled TLB modified exception");
 }
 
 void tlb_load_exception(void)
 {
-
-  //get the thread we are running in
-  thread_table_t *me = thread_get_current_thread_entry();
-  tlb_exception_state_t tes;
-  _tlb_get_exception_state(&tes);
-  int found = 0;
-  //loop over every pagetable entry and see if the page match
-  //and the asid matches
-  //if we get a match, write to random tlb_entry
-  int i;
-  for (i = 0; i < PAGETABLE_ENTRIES; i++){
-    if((me->pagetable->entries[i].VPN2 == tes.badvpn2) && ((me->pagetable->entries[i].V0) & 1 || (me->pagetable->entries[i].V1) & 1)){
-      _tlb_write_random(&(me->pagetable->entries[i]));
-      found = 1;
-      break;
-    } 
-  }
-  
-  if(!found){
-    kprintf("badvaddr: %d \nbadvpn2: %d \nasid: %d \n", 
-	    tes.badvaddr, tes.badvpn2, tes.asid);
-    //we did not find the page we were looking for  
-    KERNEL_PANIC("TLB load exception didn't find the page\n");
-  }
-  kprintf("badvaddr: %d \nbadvpn2: %d \nasid: %d \n", 
-	  tes.badvaddr, tes.badvpn2, tes.asid);
+    KERNEL_PANIC("Unhandled TLB load exception");
 }
 
 void tlb_store_exception(void)
 {
-  // just call load exceptions, since they are equal
-  tlb_load_exception();
+    KERNEL_PANIC("Unhandled TLB store exception");
 }
 
 /**
@@ -91,8 +65,6 @@ void tlb_store_exception(void)
 
 void tlb_fill(pagetable_t *pagetable)
 {
-  KERNEL_PANIC("Called tlb_fill should not happen");
-  
     if(pagetable == NULL)
 	return;
 

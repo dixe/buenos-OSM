@@ -44,33 +44,6 @@
 #include "drivers/gcd.h"
 #include "fs/vfs.h"
 #include "kernel/thread.h"
-#include "proc/semaphore.h"
-#include "vm/vm.h"
-#include "vm/pagepool.h"
-//tmp imports
-#include "kernel/interrupt.h"
-#include "vm/tlb.h"
-
-
-user_sem_t *syscall_sem_open(char const *name, int value){
-  return user_sem_open(name,value);
-}
-
-
-int syscall_sem_p(user_sem_t* handle){
-
-  return user_sem_p(handle);
-}
-
-
-int syscall_sem_v(user_sem_t *handle){
-  return user_sem_v(handle);
-}
-
-int syscall_sem_destroy(user_sem_t *handle){
-  return user_sem_destroy(handle);
-}
-
 
 int syscall_write(uint32_t fd, char *s, int len)
 {
@@ -98,70 +71,6 @@ int syscall_read(uint32_t fd, char *s, int len)
     KERNEL_PANIC("Read syscall not finished yet.");
     return 0;
   }
-}
-
-void* syscall_memlimit(void *heap_end){
-  
-  thread_table_t *my_entry;
-  uint32_t i;
-  uint32_t phys_page;
-  process_table_t *my_proc;
-
-
-  // get the current process and thread
-  my_proc  = process_get_current_process_entry();
-  my_entry = thread_get_current_thread_entry();
-
-  if(heap_end == NULL){
-    kprintf("arg is null returning current heap_end\n");
-    return my_proc->heap_end;
-  }
-
-  if(heap_end > my_proc->heap_end){
-    kprintf("Heap_end is greater then old heap_end\n");
-    return NULL;
-  }
-
-  //if the head_end is below current head_end, return NULL
-  uint32_t size = (uint32_t) (my_proc->heap_end - (uint32_t) heap_end); 
-  kprintf("size is: %d\n",size);
-  
-  // align current_heap_end
-  while(((uint32_t)my_proc->heap_end % 4) != 0){
-    my_proc->heap_end += 1;
-  }
-
-  // set i to old heap_end, while > new_heap_end, i -= PAGE_SIZE
-  // update heap_end to point to actual allocated space  
-  uint32_t last_vaddr = (uint32_t) heap_end;
-  for( i = (uint32_t)my_proc->heap_end; i > (uint32_t)heap_end; i-= PAGE_SIZE){
-    kprintf("In loop\n");
-    phys_page = pagepool_get_phys_page();
-    KERNEL_ASSERT(phys_page != 0);
-    kprintf("vpage is: %u\n",(uint32_t) i);
-    kprintf("old_heap_end is: %d\n",(uint32_t)my_proc->heap_end);
-    kprintf("new_heap_end is: %d\n",(uint32_t)heap_end);
-    vm_map(my_entry->pagetable, phys_page, (uint32_t) i, 1);
-    last_vaddr = i - PAGE_SIZE ;
-  }
-  
-  // if i is lower the heap_end, then we allocated more space then needed
-  // set heap_end to end of actual allocated + 4 for the next free pageb
-  if(last_vaddr < (uint32_t) heap_end){
-    kprintf("last vaddr < heap_end\n");
-    heap_end = (void*) (last_vaddr - 4);
-  }
-  kprintf("last vaddr is: %u\n", last_vaddr);
-  kprintf("PAGE_SIZE is: %u\n", PAGE_SIZE);
-  
-
-  if(heap_end == my_proc->heap_end){
-    KERNEL_PANIC("heap_end is equal to old heap_end\n");
-  }
-
-  my_proc->heap_end = heap_end;  
-  kprintf("heap end is: %d\n", (uint32_t) my_proc->heap_end);
-  return my_proc->heap_end;
 }
 
 /**
@@ -206,26 +115,6 @@ void syscall_handle(context_t *user_context)
       break;
     case SYSCALL_WRITE:
       V0 = syscall_write(A1, (char *)A2, A3);
-      break;
-case SYSCALL_SEM_OPEN:      
-      user_context->cpu_regs[MIPS_REGISTER_V0]=
-	(int)syscall_sem_open((char*)user_context->cpu_regs[MIPS_REGISTER_A1],
-			 user_context->cpu_regs[MIPS_REGISTER_A2]);
-      break;
-    case SYSCALL_SEM_PROCURE:      
-      user_context->cpu_regs[MIPS_REGISTER_V0]=
-	syscall_sem_p((user_sem_t*)user_context->cpu_regs[MIPS_REGISTER_A1]);
-      break;
-    case SYSCALL_SEM_VACATE:      
-      user_context->cpu_regs[MIPS_REGISTER_V0]=
-	syscall_sem_v((user_sem_t*)user_context->cpu_regs[MIPS_REGISTER_A1]);
-      break;
-    case SYSCALL_SEM_DESTROY:      
-      user_context->cpu_regs[MIPS_REGISTER_V0]=
-	syscall_sem_destroy((user_sem_t*)user_context->cpu_regs[MIPS_REGISTER_A1]);
-      break;
-    case SYSCALL_MEMLIMIT:
-      V0 = (int) syscall_memlimit((void *) A1);
       break;
     default:
       KERNEL_PANIC("Unhandled system call\n");

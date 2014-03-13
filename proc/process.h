@@ -58,15 +58,14 @@ typedef enum {
 } process_state_t;
 
 typedef struct {
-  char executable[PROCESS_NAME_MAX];
-  process_state_t state;
-  int retval; /* Return value - negative if we have been joined. */
-  process_id_t parent; /* Parent, negative if none. */
-  process_id_t first_zombie; /* PID of first nonjoined dead child. */
-  process_id_t prev_zombie; /* PID of previous zombie sibling. */
-  process_id_t next_zombie; /* PID of next zombie sibling. */
-  int children; /* Number of nonjoined child processes. */
-  void* heap_end; // pointer to head end
+    char executable[PROCESS_NAME_MAX];
+    process_state_t state;
+    int retval; /* Return value - negative if we have been joined. */
+    process_id_t parent; /* Parent, negative if none. */
+    process_id_t first_zombie; /* PID of first nonjoined dead child. */
+    process_id_t prev_zombie; /* PID of previous zombie sibling. */
+    process_id_t next_zombie; /* PID of next zombie sibling. */
+    int children; /* Number of nonjoined child processes. */
 } process_table_t;
 
 /* Run process in new thread, returns PID of new process. */

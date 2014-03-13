@@ -17,7 +17,7 @@ int main(void) {
   wait0 = syscall_sem_open("wait0", 0);
   wait1 = syscall_sem_open("wait1", 0);
   read_write_lock = syscall_sem_open("rwlock", 1);
-    
+
   /* Run the childs. */
   prog0 = syscall_exec(VOLUME "prog0");
   prog1 = syscall_exec(VOLUME "prog1");
@@ -28,8 +28,5 @@ int main(void) {
   printf("Childs joined with return values %d and %d.\n", ret0, ret1);
 
   syscall_halt();
-  wait0=wait0;
-  wait1 =wait1;
-  read_write_lock= read_write_lock;
   return 0;
 }

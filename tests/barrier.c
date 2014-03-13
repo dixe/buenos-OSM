@@ -28,5 +28,9 @@ int main(void) {
   printf("Childs joined with return values %d and %d.\n", ret0, ret1);
 
   syscall_halt();
+  wait0=wait0;
+  wait1=wait1;
+  read_write_lock = read_write_lock;
+  
   return 0;
 }

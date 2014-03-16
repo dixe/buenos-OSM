@@ -168,7 +168,8 @@ fs_t * tfs_init(gbd_t *disk)
     fs->read    = tfs_read;
     fs->write   = tfs_write;
     fs->getfree  = tfs_getfree;
-
+    fs->filecount= tfs_filecount;
+    fs->file    = tfs_file;
     return fs;
 }
 
@@ -816,5 +817,84 @@ int tfs_getfree(fs_t *fs)
     semaphore_V(tfs->lock);
     return (tfs->totalblocks - allocated)*TFS_BLOCK_SIZE;
 }
+
+// vname is volume name
+int tfs_filecount(struct fs_struct *fs)
+{
+  tfs_t *tfs;
+  gbd_request_t req;
+  uint32_t i;
+  int r, filecount = 0;
+  
+  filecount = filecount;
+  tfs = (tfs_t *)fs->internal;
+  
+  semaphore_P(tfs->lock);
+  
+  req.block     = TFS_DIRECTORY_BLOCK;
+  req.buf       = ADDR_KERNEL_TO_PHYS((uint32_t)tfs->buffer_md);
+  req.sem       = NULL;
+  r = tfs->disk->read_block(tfs->disk,&req);
+  if(r == 0) {
+    /* An error occured during read. */
+    semaphore_V(tfs->lock);
+    return VFS_ERROR;
+  }
+  
+  for(i=0;i < TFS_MAX_FILES;i++) {
+    if ( tfs->buffer_md[i].inode != 0 ){
+      filecount++;
+    }
+  }
+  
+  semaphore_V(tfs->lock);
+  return filecount;
+}
+
+int tfs_file(struct fs_struct *fs, int index, char* buffer){
+  tfs_t *tfs;
+  gbd_request_t req;
+  uint32_t i;
+  int i2;
+  int r, err = 0;
+  
+  tfs = (tfs_t *)fs->internal;
+  
+  semaphore_P(tfs->lock);
+  
+  req.block     = TFS_DIRECTORY_BLOCK;
+  req.buf       = ADDR_KERNEL_TO_PHYS((uint32_t)tfs->buffer_md);
+  req.sem       = NULL;
+
+  r = tfs->disk->read_block(tfs->disk,&req);
+
+  if(r == 0) {
+    /* An error occured during read. */
+    semaphore_V(tfs->lock);
+    return VFS_ERROR;
+  }
+  
+
+  for(i=0, i2=0; i < TFS_MAX_FILES && i2 < index; i++) {
+    if ( tfs->buffer_md[i].inode != 0 ){
+      i2++;
+    }
+  } 
+  
+  if(!(i<TFS_MAX_FILES)){
+    err = -1; // error
+    semaphore_V(tfs->lock);
+    return err;
+    
+  }
+  // copy i since when we are here i<TFS_MAX_FILES and i2 == index, ie we have been through index
+  // number of real files
+  stringcopy(buffer, tfs->buffer_md[i].name, VFS_NAME_LENGTH);
+
+  semaphore_V(tfs->lock);
+    
+  return err;
+}
+
 
 /** @} */

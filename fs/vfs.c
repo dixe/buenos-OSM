@@ -1,5 +1,5 @@
 /*
- * Virtual Filesystem (VFS).
+ * Virtualilesystem (VFS).
  *
  * Copyright (C) 2003 Juha Aatrokoski, Timo Lilja,
  *   Leena Salmela, Teemu Takanen, Aleksi Virtanen.
@@ -525,7 +525,7 @@ int vfs_unmount(char *name)
 
 openfile_t vfs_open(char *pathname)
 {
-    openfile_t file;
+  openfile_t file;
     int fileid;
     char volumename[VFS_NAME_LENGTH];
     char filename[VFS_NAME_LENGTH];
@@ -548,6 +548,7 @@ openfile_t vfs_open(char *pathname)
 	}
     }
 
+
     if(file >= CONFIG_MAX_OPEN_FILES) {
 	semaphore_V(openfile_table.sem);
 	semaphore_V(vfs_table.sem);
@@ -555,6 +556,7 @@ openfile_t vfs_open(char *pathname)
         vfs_end_op();
 	return VFS_LIMIT;
     }
+
 
     fs = vfs_get_filesystem(volumename);
 
@@ -580,10 +582,12 @@ openfile_t vfs_open(char *pathname)
 	return fileid; /* negative -> error*/
     }
 
+
     openfile_table.files[file].fileid = fileid;
     openfile_table.files[file].seek_position = 0;
 
     vfs_end_op();
+
     return file;
 }
 
@@ -834,9 +838,7 @@ int vfs_remove(char *pathname)
     }
 
     semaphore_P(vfs_table.sem);
-
     fs = vfs_get_filesystem(volumename);
-
     if(fs == NULL) {
 	semaphore_V(vfs_table.sem);
         vfs_end_op();
@@ -888,5 +890,87 @@ int vfs_getfree(char *filesystem)
     return ret;
 }
 
+int vfs_filecount(char *name){
+  int filecount = 0;
+  fs_t *fs = NULL;
+
+  if (vfs_start_op() != VFS_OK)
+    return VFS_UNUSABLE;
+
+  semaphore_P(vfs_table.sem);
+  semaphore_P(openfile_table.sem);
+
+  if(name == NULL){ // return number of mounted file systems
+    int i = 0;
+    for(i = 0; i < CONFIG_MAX_FILESYSTEMS; i++){
+      if(vfs_table.filesystems[i].filesystem != NULL){
+	filecount++;
+      }
+    }
+    
+    semaphore_V(openfile_table.sem);
+    semaphore_V(vfs_table.sem);
+    vfs_end_op();
+    return filecount ;
+  }
+
+  fs = vfs_get_filesystem(name);
+
+  if(fs == NULL) {
+    semaphore_V(openfile_table.sem);
+    semaphore_V(vfs_table.sem);
+    vfs_end_op();
+    return VFS_NO_SUCH_FS;
+  }
+  
+  semaphore_V(openfile_table.sem);
+  semaphore_V(vfs_table.sem);
+  
+  // call the tfs function to get filecount
+  filecount = fs->filecount(fs);
+  
+  vfs_end_op();
+  
+  return filecount;
+}
+
+
+int vfs_file(char* name, int index, char* buffer){
+
+  fs_t *fs = NULL;
+  int err = 0;
+
+  if (vfs_start_op() != VFS_OK)
+    return VFS_UNUSABLE;
+
+  semaphore_P(vfs_table.sem);
+  semaphore_P(openfile_table.sem);
+
+  if(name == NULL){ // copy filesystem index
+    stringcopy(buffer, vfs_table.filesystems[index].mountpoint, VFS_NAME_LENGTH);
+    semaphore_V(openfile_table.sem);
+    semaphore_V(vfs_table.sem);
+    vfs_end_op();
+    return 0 ;
+  }
+
+  fs = vfs_get_filesystem(name);
+
+  if(fs == NULL) {
+    semaphore_V(openfile_table.sem);
+    semaphore_V(vfs_table.sem);
+    vfs_end_op();
+    return VFS_NO_SUCH_FS;
+  }
+  
+  semaphore_V(openfile_table.sem);
+  semaphore_V(vfs_table.sem);
+  
+  // call the tfs function to get filecount
+  err = fs->file(fs, index, buffer);
+
+  vfs_end_op();
+  return err;
+}
 /** @} */
 

@@ -108,21 +108,17 @@ int syscall_delete(char* pathname){
 }
 
 int syscall_seek(int filehande, int offset){
-  
   return vfs_seek(filehande - 3, offset);
 }
 
 int syscall_filecount(char* name){
-  name = name;
-  return 0;
+  return vfs_filecount(name);
 }
 
 int syscall_file(char* name, int index, char* buffer){
-  name = name;
-  index = index;
-  buffer = buffer;
-  return 0;
+  return vfs_file(name, index, buffer);
 }
+
 /**
  * Handle system calls. Interrupts are enabled when this function is
  * called.

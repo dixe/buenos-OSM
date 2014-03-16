@@ -224,6 +224,14 @@ int syscall_sem_v(usr_sem_t* handle)
   return (int)_syscall(SYSCALL_SEM_VACATE, (uint32_t)handle, 0, 0);
 }
 
+int syscall_filecount(const char* name){
+  return (int) _syscall(SYSCALL_FILECOUNT,(uint32_t) name,0,0);
+}
+
+int syscall_file(const char* name, int index, char* buffer){
+  return (int) _syscall(SYSCALL_FILE,(uint32_t) name,(uint32_t) index, (uint32_t) buffer);
+}
+
 /* The following functions are not system calls, but convenient
    library functions inspired by POSIX and the C standard library. */
 

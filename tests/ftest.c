@@ -6,7 +6,9 @@ int main (){
   int err = 0;
   int fd;
   char input[BUFFER_SIZE];
-  char output[BUFFER_SIZE];
+  char output[BUFFER_SIZE];  
+  char *name = "arkimedes"; // for filecount syscall
+  char fname[BUFFER_SIZE]; // for file syscall
   printf("Hello creating file named test2, with size 256\n");
   err = syscall_create("[arkimedes]test2", 256);
   if(err < 0){
@@ -33,6 +35,15 @@ int main (){
     err = syscall_write(fd,input,BUFFER_SIZE); 
     printf("Wrote to file, err: %d\n", err);
   }
+
+
+  // test filecount syscall
+  printf("Files on arkimedes is %d\n", syscall_filecount(name));
+  
+  // test file syscall
+  err = syscall_file(name,4,fname);
+  printf("File 4 on arkimedes is %s, syscall_file ended with: %d \n", fname,err);
+
   err = syscall_read(fd,output,BUFFER_SIZE);
   printf("in file with fd = %d, content is: %s\n", fd, output);  
   // close file and shut down

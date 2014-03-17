@@ -880,7 +880,6 @@ int tfs_file(struct fs_struct *fs, int index, char* buffer){
       i2++;
     }
   } 
-  
   if(!(i<TFS_MAX_FILES)){
     err = -1; // error
     semaphore_V(tfs->lock);
@@ -890,7 +889,6 @@ int tfs_file(struct fs_struct *fs, int index, char* buffer){
   // copy i since when we are here i<TFS_MAX_FILES and i2 == index, ie we have been through index
   // number of real files
   stringcopy(buffer, tfs->buffer_md[i].name, VFS_NAME_LENGTH);
-
   semaphore_V(tfs->lock);
     
   return err;

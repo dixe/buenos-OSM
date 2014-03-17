@@ -955,6 +955,7 @@ int vfs_file(char* name, int index, char* buffer){
   }
 
   fs = vfs_get_filesystem(name);
+  
 
   if(fs == NULL) {
     semaphore_V(openfile_table.sem);

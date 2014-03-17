@@ -41,8 +41,8 @@ int main (){
   printf("Files on arkimedes is %d\n", syscall_filecount(name));
   
   // test file syscall
-  err = syscall_file(name,4,fname);
-  printf("File 4 on arkimedes is %s, syscall_file ended with: %d \n", fname,err);
+  err = syscall_file(name, 1, fname);
+  printf("File 1 on arkimedes is %s, syscall_file ended with: %d \n", fname,err);
 
   err = syscall_read(fd,output,BUFFER_SIZE);
   printf("in file with fd = %d, content is: %s\n", fd, output);  

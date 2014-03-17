@@ -24,6 +24,7 @@ int cmd_exit();
 int cmd_rm(int, char**);
 int cmd_cp(int, char**);
 int cmd_cmp(int, char**);
+int cmd_ls(int, char**);
 
 cmd_t commands[] =
   { {"echo", cmd_echo, "print the arguments to the screen"},
@@ -33,7 +34,8 @@ cmd_t commands[] =
     {"exit", cmd_exit, "exit the terminal"},
     {"rm", cmd_rm, "delete file given as argument"},
     {"cp", cmd_cp, "copy contents from file in arg1 to file in arg2"},
-    {"cmp", cmd_cmp, "compare contents of arg1 and 2, return 0 if equal"}
+    {"cmp", cmd_cmp, "compare contents of arg1 and 2, return 0 if equal"},
+    {"ls", cmd_ls, "list all files on volume given in arg1"}
     
   };
 
@@ -302,5 +304,28 @@ int cmd_cp(int argc, char** argv) {
     }
   }
 
+  return 0;
+}
+
+int cmd_ls(int argc, char** argv) {
+  int err, i, fcount = 0;
+  char fname[17]; //only be 16 chars long a without mount point
+  if (argc < 2) {
+    printf("Usage: ls <volumnename>\n");
+    return 1;
+  }
+  
+  // get number of files on system
+  fcount = syscall_filecount(argv[1]);
+
+  for(i = 0; i < fcount; i++){
+    // get file i from filesystem, bind to fname
+    err = syscall_file(argv[1],i,fname);
+    if (err != 0){
+      printf("error number %d, ending\n", err);
+      return 1;
+    }
+    printf("file %d: %s\n", i, fname);
+  }
   return 0;
 }
